@@ -135,6 +135,27 @@ export default function InventoryScreen() {
         setNewProduct(p => ({ ...p, name: updatedWords.join(' ') }));
     };
 
+    const handleAddCategory = async () => {
+        const randomSuffix = Math.floor(100 + Math.random() * 900);
+        const defaultName = `Kategori ${randomSuffix}`;
+        const name = window.prompt("Masukkan nama kategori baru:", defaultName);
+        
+        if (name && name.trim()) {
+            const newCatName = name.trim();
+            await db.addCategory(newCatName);
+            
+            // Reload categories
+            const catData = await db.getCategories();
+            setCategories(catData);
+            
+            // Cari kategori yang baru ditambahkan untuk langsung dipilih
+            const newCat = catData.find(c => c.name === newCatName);
+            if (newCat) {
+                setNewProduct(p => ({ ...p, category_id: newCat.id }));
+            }
+        }
+    };
+
     const filteredInventory = useMemo(() => {
         let res = [...inventory];
         if (searchQuery) {
@@ -279,9 +300,14 @@ export default function InventoryScreen() {
 
                             <div className="input-group">
                                 <label>Kategori</label>
-                                <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: parseInt(e.target.value)})}>
-                                    {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                </select>
+                                <div className="category-select-row">
+                                    <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: parseInt(e.target.value)})}>
+                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                    </select>
+                                    <button type="button" className="btn-add-category" onClick={handleAddCategory}>
+                                        <Plus size={20} color="white" />
+                                    </button>
+                                </div>
                             </div>
 
                             <div className="price-stock-row">

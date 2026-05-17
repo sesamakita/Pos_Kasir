@@ -343,3 +343,26 @@
 .chip-remove-btn:hover {
     background: rgba(231, 76, 60, 0.1);
 }
+
+/* Category Quick Add Styles */
+.category-select-row {
+    display: flex;
+    gap: 8px;
+}
+.category-select-row select {
+    flex: 1;
+}
+.btn-add-category {
+    background: #3498db;
+    border: none;
+    border-radius: 12px;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+.btn-add-category:hover {
+    background: #2980b9;
+}
