@@ -6,7 +6,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Montserrat', sans-serif;
 }
 .decor-circle { position: absolute; border-radius: 50%; opacity: 0.5; }
 .circle-1 { width: 200px; height: 200px; background: #ebf5fb; top: -50px; right: -50px; }
