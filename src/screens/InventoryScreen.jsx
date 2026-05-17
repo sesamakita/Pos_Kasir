@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import './InventoryScreen.css';
 import { Camera, CameraResultType } from '@capacitor/camera';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
@@ -7,6 +8,7 @@ import * as db from '../services/db';
 import { Search, SlidersHorizontal, Plus, Trash2, Box, AlertCircle, Camera as CameraIcon, ScanLine, X, ChevronLeft, ChevronDown } from 'lucide-react';
 
 export default function InventoryScreen() {
+    const navigate = useNavigate();
     const isSuperAdmin = true; // Hardcoded for demo
 
     const [inventory, setInventory] = useState([]);
@@ -181,7 +183,7 @@ export default function InventoryScreen() {
             {/* Header */}
             <div className="header">
                 <div className="header-left">
-                    <button className="icon-btn"><ChevronLeft size={24} /></button>
+                    <button className="icon-btn" onClick={() => navigate('/dashboard')}><ChevronLeft size={24} /></button>
                     <h1 className="header-title">Inventory</h1>
                 </div>
                 <div className="header-right">

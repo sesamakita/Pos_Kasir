@@ -49,4 +49,51 @@ export async function deleteProduct(id) {
 export async function resetDatabase() {
     localStorage.removeItem('products');
     localStorage.removeItem('categories');
+    localStorage.removeItem('sales');
+}
+
+// Fitur Penjualan Offline (POS & History)
+export async function getSales() {
+    const data = localStorage.getItem('sales');
+    return data ? JSON.parse(data) : [];
+}
+
+export async function addSale(saleItems, totalAmount) {
+    const sales = await getSales();
+    const products = await getProducts();
+    
+    // Kurangi stok produk secara realtime
+    for (const item of saleItems) {
+        const prodIdx = products.findIndex(p => p.id === item.id);
+        if (prodIdx > -1) {
+            products[prodIdx].stock = Math.max(0, products[prodIdx].stock - item.quantity);
+        }
+    }
+    localStorage.setItem('products', JSON.stringify(products));
+
+    const newSale = {
+        id: `TRX-${Date.now().toString().slice(-6)}`,
+        date: new Date().toISOString(),
+        items: saleItems,
+        total: totalAmount,
+        type: 'sale'
+    };
+    
+    sales.unshift(newSale); // Tambahkan transaksi baru di urutan teratas
+    localStorage.setItem('sales', JSON.stringify(sales));
+    return newSale;
+}
+
+export async function getRecentActivity(limit = 5) {
+    const sales = await getSales();
+    return sales.slice(0, limit);
+}
+
+export async function getTodaySalesTotal() {
+    const sales = await getSales();
+    const today = new Date().toDateString();
+    
+    return sales
+        .filter(s => new Date(s.date).toDateString() === today)
+        .reduce((sum, s) => sum + s.total, 0);
 }

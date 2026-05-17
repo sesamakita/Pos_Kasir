@@ -14,7 +14,7 @@ export default function LoginScreen() {
         setIsLoading(true);
         // Simulasi login sukses
         setTimeout(() => {
-            navigate('/inventory', { replace: true });
+            navigate('/dashboard', { replace: true });
         }, 1000);
     };
 
