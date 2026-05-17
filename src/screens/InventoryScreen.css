@@ -286,3 +286,60 @@
     background: #f1f2f6; color: #2f3542; font-weight: bold; border: none;
     padding: 14px; border-radius: 12px; cursor: pointer; font-size: 15px;
 }
+
+/* OCR Tags/Chips Styling */
+.ocr-chips-container {
+    margin-top: 12px;
+}
+.chips-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: #7f8c8d;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.ocr-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    background: #f8f9fa;
+    padding: 10px;
+    border-radius: 12px;
+    border: 1px solid #eef0f2;
+}
+.ocr-chip {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    color: #2c3e50;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    border: 1px solid #eef0f2;
+    transition: all 0.2s ease;
+}
+.ocr-chip span {
+    font-weight: 500;
+}
+.chip-remove-btn {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 16px;
+    margin-left: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    transition: background 0.2s ease;
+    padding: 0;
+}
+.chip-remove-btn:hover {
+    background: rgba(231, 76, 60, 0.1);
+}

@@ -25,6 +25,7 @@ export default function InventoryScreen() {
 
     const [isScannerVisible, setScannerVisible] = useState(false);
     const [isLoadingOCR, setIsLoadingOCR] = useState(false);
+    const [ocrWords, setOcrWords] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -71,6 +72,7 @@ export default function InventoryScreen() {
 
         setAddVisible(false);
         setNewProduct({ name: '', price: '', stock: '', category_id: categories[0]?.id || 1, image_uri: null, barcode: '' });
+        setOcrWords([]);
         loadData();
     };
 
@@ -113,7 +115,9 @@ export default function InventoryScreen() {
             if (result.results && result.results.length > 0) {
                 // Menggabungkan seluruh teks yang terdeteksi dengan spasi
                 const detectedText = result.results.map(r => r.text.trim()).filter(Boolean).join(' ');
-                setNewProduct(p => ({ ...p, name: detectedText }));
+                const words = detectedText.split(/\s+/).filter(Boolean);
+                setOcrWords(words);
+                setNewProduct(p => ({ ...p, name: words.join(' ') }));
             } else {
                 alert("Tidak ada teks yang terdeteksi pada gambar.");
             }
@@ -123,6 +127,12 @@ export default function InventoryScreen() {
         } finally {
             setIsLoadingOCR(false);
         }
+    };
+
+    const handleRemoveOcrWord = (indexToRemove) => {
+        const updatedWords = ocrWords.filter((_, index) => index !== indexToRemove);
+        setOcrWords(updatedWords);
+        setNewProduct(p => ({ ...p, name: updatedWords.join(' ') }));
     };
 
     const filteredInventory = useMemo(() => {
@@ -251,6 +261,20 @@ export default function InventoryScreen() {
                             <div className="input-group">
                                 <label>Nama Produk</label>
                                 <input type="text" placeholder="Masukkan nama" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+                                
+                                {ocrWords.length > 0 && (
+                                    <div className="ocr-chips-container">
+                                        <span className="chips-label">Hasil OCR (klik x untuk hapus kata):</span>
+                                        <div className="ocr-chips">
+                                            {ocrWords.map((word, idx) => (
+                                                <div key={idx} className="ocr-chip">
+                                                    <span>{word}</span>
+                                                    <button type="button" className="chip-remove-btn" onClick={() => handleRemoveOcrWord(idx)}>×</button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="input-group">
