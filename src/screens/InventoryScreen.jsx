@@ -26,6 +26,10 @@ export default function InventoryScreen() {
     const [isScannerVisible, setScannerVisible] = useState(false);
     const [isLoadingOCR, setIsLoadingOCR] = useState(false);
     const [ocrWords, setOcrWords] = useState([]);
+    
+    // States untuk modal Add Category baru yang interaktif
+    const [isAddCategoryVisible, setAddCategoryVisible] = useState(false);
+    const [newCategoryName, setNewCategoryName] = useState('');
 
     useEffect(() => {
         loadData();
@@ -135,25 +139,36 @@ export default function InventoryScreen() {
         setNewProduct(p => ({ ...p, name: updatedWords.join(' ') }));
     };
 
-    const handleAddCategory = async () => {
+    const handleOpenAddCategory = () => {
         const randomSuffix = Math.floor(100 + Math.random() * 900);
-        const defaultName = `Kategori ${randomSuffix}`;
-        const name = window.prompt("Masukkan nama kategori baru:", defaultName);
-        
-        if (name && name.trim()) {
-            const newCatName = name.trim();
-            await db.addCategory(newCatName);
-            
-            // Reload categories
-            const catData = await db.getCategories();
-            setCategories(catData);
-            
-            // Cari kategori yang baru ditambahkan untuk langsung dipilih
-            const newCat = catData.find(c => c.name === newCatName);
-            if (newCat) {
-                setNewProduct(p => ({ ...p, category_id: newCat.id }));
-            }
+        setNewCategoryName(`Kategori ${randomSuffix}`);
+        setAddCategoryVisible(true);
+    };
+
+    const handleRandomizeCategoryName = () => {
+        const randomSuffix = Math.floor(100 + Math.random() * 900);
+        setNewCategoryName(`Kategori ${randomSuffix}`);
+    };
+
+    const handleSaveCategory = async () => {
+        if (!newCategoryName || !newCategoryName.trim()) {
+            return alert("Nama kategori tidak boleh kosong.");
         }
+        const cleanName = newCategoryName.trim();
+        await db.addCategory(cleanName);
+        
+        // Reload categories
+        const catData = await db.getCategories();
+        setCategories(catData);
+        
+        // Auto-select kategori baru
+        const newCat = catData.find(c => c.name === cleanName);
+        if (newCat) {
+            setNewProduct(p => ({ ...p, category_id: newCat.id }));
+        }
+        
+        setAddCategoryVisible(false);
+        setNewCategoryName('');
     };
 
     const filteredInventory = useMemo(() => {
@@ -304,7 +319,7 @@ export default function InventoryScreen() {
                                     <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: parseInt(e.target.value)})}>
                                         {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                                     </select>
-                                    <button type="button" className="btn-add-category" onClick={handleAddCategory}>
+                                    <button type="button" className="btn-add-category" onClick={handleOpenAddCategory}>
                                         <Plus size={20} color="white" />
                                     </button>
                                 </div>
@@ -340,6 +355,39 @@ export default function InventoryScreen() {
                         <div className="modal-actions">
                             <button className="cancel-button" onClick={() => setRestockVisible(false)}>Batal</button>
                             <button className="primary-button" onClick={handleRestock}>Update Stok</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ADD CATEGORY SUB-MODAL */}
+            {isAddCategoryVisible && (
+                <div className="modal-overlay sub-modal-overlay">
+                    <div className="modal-content category-modal">
+                        <div className="modal-header">
+                            <h3>Tambah Kategori Baru</h3>
+                            <button onClick={() => setAddCategoryVisible(false)} className="close-btn"><X size={24} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <div className="input-group">
+                                <label>Nama Kategori</label>
+                                <div className="random-input-row">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Masukkan nama kategori" 
+                                        value={newCategoryName} 
+                                        onChange={e => setNewCategoryName(e.target.value)} 
+                                        autoFocus
+                                    />
+                                    <button type="button" className="btn-randomize" onClick={handleRandomizeCategoryName} title="Acak Nama Baru">
+                                        🎲
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="modal-actions">
+                                <button className="cancel-button" onClick={() => setAddCategoryVisible(false)}>Batal</button>
+                                <button className="primary-button" onClick={handleSaveCategory}>Simpan</button>
+                            </div>
                         </div>
                     </div>
                 </div>

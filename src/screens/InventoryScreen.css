@@ -366,3 +366,43 @@
 .btn-add-category:hover {
     background: #2980b9;
 }
+
+/* Sub-modal styling for Add Category */
+.sub-modal-overlay {
+    z-index: 1100;
+    align-items: center; /* Tampil di tengah layar */
+}
+.category-modal {
+    max-width: 400px;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    margin: 16px;
+    animation: fadeInScale 0.2s ease;
+}
+@keyframes fadeInScale {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.random-input-row {
+    display: flex;
+    gap: 8px;
+}
+.random-input-row input {
+    flex: 1;
+}
+.btn-randomize {
+    background: #ebf5fb;
+    border: 1px solid #ddd;
+    border-radius: 12px;
+    font-size: 18px;
+    padding: 0 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+.btn-randomize:hover {
+    background: #d4e6f1;
+    transform: rotate(15deg);
+}
