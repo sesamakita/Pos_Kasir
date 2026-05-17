@@ -106,12 +106,19 @@ export default function InventoryScreen() {
             
             setNewProduct(p => ({ ...p, image_uri: photo.webPath }));
 
-            const result = await Ocr.process({ path: photo.path });
-            if (result.blocks && result.blocks.length > 0) {
-                setNewProduct(p => ({ ...p, name: result.blocks[0].text }));
+            console.log("Processing OCR for image path:", photo.path);
+            const result = await Ocr.process({ image: photo.path });
+            console.log("OCR raw result:", result);
+
+            if (result.results && result.results.length > 0) {
+                // Menggabungkan seluruh teks yang terdeteksi dengan spasi
+                const detectedText = result.results.map(r => r.text.trim()).filter(Boolean).join(' ');
+                setNewProduct(p => ({ ...p, name: detectedText }));
+            } else {
+                alert("Tidak ada teks yang terdeteksi pada gambar.");
             }
         } catch (err) {
-            console.error(err);
+            console.error("OCR Error detail:", err);
             alert("Gagal membaca teks dari gambar.");
         } finally {
             setIsLoadingOCR(false);
