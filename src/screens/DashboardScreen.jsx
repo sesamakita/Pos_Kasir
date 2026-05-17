@@ -9,17 +9,25 @@ import './DashboardScreen.css';
 
 export default function DashboardScreen() {
     const navigate = useNavigate();
+    const [currentUser, setCurrentUser] = useState(null);
     const [todaySales, setTodaySales] = useState(0);
     const [recentSales, setRecentSales] = useState([]);
     const [stats, setStats] = useState({ productsCount: 0, lowStockCount: 0 });
 
     useEffect(() => {
-        loadDashboardData();
-    }, []);
+        const user = db.getCurrentUser();
+        if (!user) {
+            navigate('/login', { replace: true });
+            return;
+        }
+        setCurrentUser(user);
+        loadDashboardData(user);
+    }, [navigate]);
 
-    const loadDashboardData = async () => {
-        const salesTotal = await db.getTodaySalesTotal();
-        const activity = await db.getRecentActivity(4);
+    const loadDashboardData = async (user) => {
+        const isSuper = user.role === 'SUPER_ADMIN';
+        const salesTotal = await db.getTodaySalesTotal(user.role, user.id);
+        const activity = await db.getRecentActivity(4, user.role, user.id);
         const products = await db.getProducts();
 
         setTodaySales(salesTotal);
@@ -34,6 +42,7 @@ export default function DashboardScreen() {
 
     const handleLogout = () => {
         if (window.confirm("Apakah Anda yakin ingin keluar?")) {
+            db.logoutUser();
             navigate('/login', { replace: true });
         }
     };
@@ -46,14 +55,40 @@ export default function DashboardScreen() {
         });
     };
 
+    if (!currentUser) return null;
+
+    const isSuper = currentUser.role === 'SUPER_ADMIN';
+
+    // Role-based custom inline styles to keep visual design premium
+    const goldThemeCard = {
+        background: 'linear-gradient(135deg, #8B6508, #B8860B)',
+        boxShadow: '0 10px 20px rgba(184, 134, 11, 0.15)'
+    };
+
+    const goldThemeBtn = {
+        color: '#8B6508'
+    };
+
+    const goldRoleTag = {
+        color: '#B8860B',
+        background: 'rgba(184, 134, 11, 0.1)'
+    };
+
+    const blueRoleTag = {
+        color: '#3498db',
+        background: 'rgba(52, 152, 219, 0.1)'
+    };
+
     return (
         <div className="dashboard-container">
             {/* Header */}
             <div className="dashboard-header">
                 <div className="header-left-info">
                     <div className="user-greeting">
-                        <h1>Hello, Admin</h1>
-                        <span className="role-tag">👑 Owner</span>
+                        <h1>Hello, {currentUser.full_name.split(' ')[0]}</h1>
+                        <span className="role-tag" style={isSuper ? goldRoleTag : blueRoleTag}>
+                            {isSuper ? '👑 Super Admin' : '👤 Staff Kasir'}
+                        </span>
                     </div>
                     <p className="current-date">{formatDate()}</p>
                 </div>
@@ -63,13 +98,15 @@ export default function DashboardScreen() {
             </div>
 
             {/* Sales Card */}
-            <div className="sales-hero-card">
+            <div className="sales-hero-card" style={isSuper ? goldThemeCard : {}}>
                 <div className="sales-card-info">
-                    <span className="sales-label">Total Penjualan Hari Ini</span>
+                    <span className="sales-label">
+                        {isSuper ? 'Total Penjualan Toko (Hari Ini)' : 'Penjualan Shift Anda (Hari Ini)'}
+                    </span>
                     <h2 className="sales-amount">Rp {todaySales.toLocaleString('id-ID')}</h2>
-                    <p className="sales-description">Sesi Shift Aktif</p>
+                    <p className="sales-description">{isSuper ? 'Sesi Global Realtime' : 'Sesi Shift Aktif Anda'}</p>
                 </div>
-                <button className="open-pos-btn" onClick={() => navigate('/pos')}>
+                <button className="open-pos-btn" onClick={() => navigate('/pos')} style={isSuper ? goldThemeBtn : {}}>
                     <span>Buka POS</span>
                     <ArrowUpRight size={18} />
                 </button>
@@ -77,7 +114,7 @@ export default function DashboardScreen() {
 
             {/* Quick Stats Banner */}
             <div className="stats-row">
-                <div className="stat-pill" onClick={() => navigate('/inventory')}>
+                <div className="stat-pill" onClick={() => navigate('/inventory')} style={isSuper ? { borderColor: '#B8860B30' } : {}}>
                     <span className="stat-val">{stats.productsCount}</span>
                     <span className="stat-lbl">Produk Terdaftar</span>
                 </div>
@@ -100,7 +137,7 @@ export default function DashboardScreen() {
                     <div className="grid-card card-purple" onClick={() => navigate('/inventory')}>
                         <div className="grid-icon-box"><Box size={24} color="#9b59b6" /></div>
                         <h4>Inventaris</h4>
-                        <p>Kelola Stok & Barang</p>
+                        <p>{isSuper ? 'Kelola Stok & Barang' : 'Cek Stok Barang'}</p>
                     </div>
 
                     <div className="grid-card card-orange" onClick={() => navigate('/history')}>
@@ -112,14 +149,18 @@ export default function DashboardScreen() {
                     <div className="grid-card card-green" onClick={() => navigate('/reports')}>
                         <div className="grid-icon-box"><BarChart3 size={24} color="#2ecc71" /></div>
                         <h4>Laporan</h4>
-                        <p>Statistik Keuntungan</p>
+                        <p>{isSuper ? 'Statistik Keuntungan' : 'Laporan Harian'}</p>
                     </div>
 
-                    <div className="grid-card card-teal" onClick={() => navigate('/users')}>
-                        <div className="grid-icon-box"><Users size={24} color="#1abc9c" /></div>
-                        <h4>Karyawan</h4>
-                        <p>Hak Akses Tim</p>
-                    </div>
+                    {isSuper && (
+                        <div className="grid-card card-teal" onClick={() => navigate('/users')} style={{ borderColor: 'rgba(184, 134, 11, 0.15)' }}>
+                            <div className="grid-icon-box" style={{ background: 'rgba(184, 134, 11, 0.1)' }}>
+                                <Users size={24} color="#B8860B" />
+                            </div>
+                            <h4 style={{ color: '#8B6508' }}>Karyawan</h4>
+                            <p>Hak Akses Tim</p>
+                        </div>
+                    )}
 
                     <div className="grid-card card-grey" onClick={() => navigate('/settings')}>
                         <div className="grid-icon-box"><Settings size={24} color="#7f8c8d" /></div>
@@ -133,9 +174,9 @@ export default function DashboardScreen() {
             <div className="activity-section">
                 <div className="activity-header">
                     <h3 className="section-heading">Aktivitas Terakhir</h3>
-                    <button className="view-all-link" onClick={() => navigate('/history')}>Lihat Semua</button>
+                    <button className="view-all-link" onClick={() => navigate('/history')} style={isSuper ? { color: '#B8860B' } : {}}>Lihat Semua</button>
                 </div>
-                <div className="activity-list">
+                <div className="activity-list" style={isSuper ? { borderColor: '#B8860B15' } : {}}>
                     {recentSales.length === 0 ? (
                         <div className="empty-activity">
                             <p>Belum ada transaksi hari ini.</p>
@@ -144,16 +185,19 @@ export default function DashboardScreen() {
                         recentSales.map((sale) => (
                             <div key={sale.id} className="activity-item-card" onClick={() => navigate('/history')}>
                                 <div className="activity-left">
-                                    <div className="activity-icon-receipt"><Receipt size={16} color="#3498db" /></div>
+                                    <div className="activity-icon-receipt" style={isSuper ? { background: 'rgba(184, 134, 11, 0.1)' } : {}}>
+                                        <Receipt size={16} color={isSuper ? '#B8860B' : '#3498db'} />
+                                    </div>
                                     <div className="activity-info">
                                         <span className="activity-trx">{sale.id}</span>
                                         <span className="activity-time">
                                             {new Date(sale.date).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
+                                            {isSuper && sale.waiter_name ? ` • oleh ${sale.waiter_name.split(' ')[0]}` : ''}
                                         </span>
                                     </div>
                                 </div>
                                 <div className="activity-right">
-                                    <span className="activity-price">Rp {sale.total.toLocaleString('id-ID')}</span>
+                                    <span className="activity-price" style={isSuper ? { color: '#8B6508' } : {}}>Rp {sale.total.toLocaleString('id-ID')}</span>
                                     <ChevronRight size={16} color="#bdc3c7" />
                                 </div>
                             </div>

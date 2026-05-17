@@ -1,4 +1,40 @@
-// Simulasi Local Database agar fitur tetap berjalan sempurna secara offline (menggunakan localStorage untuk versi Web/Hybrid)
+// Simulasi Local Database dengan Dukungan Role-Based Authentication & Session Offline
+// Menggunakan localStorage untuk menjamin persistensi data offline pada Web & Capacitor APK
+
+// Inisialisasi awal database lokal jika kosong
+function initDefaultData() {
+    if (!localStorage.getItem('categories')) {
+        const defaultCats = [
+            { id: 1, name: 'Umum' },
+            { id: 2, name: 'Makanan' },
+            { id: 3, name: 'Minuman' }
+        ];
+        localStorage.setItem('categories', JSON.stringify(defaultCats));
+    }
+
+    if (!localStorage.getItem('products')) {
+        const defaultProds = [
+            { id: 1, name: 'Kopi Susu Gula Aren', price: 18000, stock: 45, category_id: 3, categoryName: 'Minuman', is_favorite: 1, image_uri: null, barcode: '8991234567891' },
+            { id: 2, name: 'Nasi Goreng Spesial', price: 25000, stock: 20, category_id: 2, categoryName: 'Makanan', is_favorite: 1, image_uri: null, barcode: '8991234567892' },
+            { id: 3, name: 'Roti Bakar Cokelat', price: 15000, stock: 15, category_id: 2, categoryName: 'Makanan', is_favorite: 0, image_uri: null, barcode: '8991234567893' }
+        ];
+        localStorage.setItem('products', JSON.stringify(defaultProds));
+    }
+
+    if (!localStorage.getItem('users')) {
+        const defaultUsers = [
+            { id: 1, username: 'admin', password: 'admin123', full_name: 'Project Owner', role: 'SUPER_ADMIN', email: 'owner@kasir.com' },
+            { id: 2, username: 'kasir', password: 'kasir123', full_name: 'Rina Kasir', role: 'ADMIN', email: 'rina@kasir.com' },
+            { id: 3, username: 'budi', password: 'budi123', full_name: 'Budi Gudang', role: 'ADMIN', email: 'budi@kasir.com' }
+        ];
+        localStorage.setItem('users', JSON.stringify(defaultUsers));
+    }
+}
+
+// Jalankan inisialisasi default
+initDefaultData();
+
+// --- PENGELOLAAN PRODUK & KATEGORI ---
 
 export async function getProducts() {
     const data = localStorage.getItem('products');
@@ -7,29 +43,40 @@ export async function getProducts() {
 
 export async function getCategories() {
     const data = localStorage.getItem('categories');
-    return data ? JSON.parse(data) : [{id: 1, name: 'Umum'}, {id: 2, name: 'Makanan'}];
+    return data ? JSON.parse(data) : [];
 }
 
 export async function addProduct(prod) {
     const prods = await getProducts();
     const cats = await getCategories();
     
-    // Cari nama kategori
     const cat = cats.find(c => c.id === parseInt(prod.category_id));
     
     const newProd = {
         ...prod,
         id: Date.now(),
+        price: parseFloat(prod.price) || 0,
+        stock: parseInt(prod.stock) || 0,
+        is_favorite: prod.is_favorite ? 1 : 0,
         categoryName: cat ? cat.name : 'Uncategorized',
     };
     prods.push(newProd);
     localStorage.setItem('products', JSON.stringify(prods));
+    return newProd;
 }
 
 export async function addCategory(name) {
     const cats = await getCategories();
-    cats.push({ id: Date.now(), name });
+    const cleanName = (name || '').trim();
+    if (!cleanName) throw new Error("Nama kategori tidak boleh kosong.");
+    
+    const exists = cats.some(c => c.name.toLowerCase() === cleanName.toLowerCase());
+    if (exists) throw new Error(`Kategori "${cleanName}" sudah terdaftar.`);
+
+    const newCat = { id: Date.now(), name: cleanName };
+    cats.push(newCat);
     localStorage.setItem('categories', JSON.stringify(cats));
+    return newCat;
 }
 
 export async function updateStock(id, addQty) {
@@ -50,9 +97,13 @@ export async function resetDatabase() {
     localStorage.removeItem('products');
     localStorage.removeItem('categories');
     localStorage.removeItem('sales');
+    localStorage.removeItem('users');
+    localStorage.removeItem('current_user');
+    initDefaultData();
 }
 
-// Fitur Penjualan Offline (POS & History)
+// --- FITUR TRANSAKSI PENJUALAN (POS & RIWAYAT) ---
+
 export async function getSales() {
     const data = localStorage.getItem('sales');
     return data ? JSON.parse(data) : [];
@@ -61,6 +112,7 @@ export async function getSales() {
 export async function addSale(saleItems, totalAmount) {
     const sales = await getSales();
     const products = await getProducts();
+    const currentUser = getCurrentUser();
     
     // Kurangi stok produk secara realtime
     for (const item of saleItems) {
@@ -76,7 +128,9 @@ export async function addSale(saleItems, totalAmount) {
         date: new Date().toISOString(),
         items: saleItems,
         total: totalAmount,
-        type: 'sale'
+        type: 'sale',
+        waiter_name: currentUser ? currentUser.full_name : 'System Admin',
+        user_id: currentUser ? currentUser.id : 1
     };
     
     sales.unshift(newSale); // Tambahkan transaksi baru di urutan teratas
@@ -84,16 +138,92 @@ export async function addSale(saleItems, totalAmount) {
     return newSale;
 }
 
-export async function getRecentActivity(limit = 5) {
+export async function getRecentActivity(limit = 5, role = 'SUPER_ADMIN', userId = null) {
     const sales = await getSales();
+    if (role === 'ADMIN' && userId) {
+        return sales.filter(s => s.user_id === userId).slice(0, limit);
+    }
     return sales.slice(0, limit);
 }
 
-export async function getTodaySalesTotal() {
+export async function getTodaySalesTotal(role = 'SUPER_ADMIN', userId = null) {
     const sales = await getSales();
     const today = new Date().toDateString();
     
     return sales
-        .filter(s => new Date(s.date).toDateString() === today)
+        .filter(s => {
+            const matchesDate = new Date(s.date).toDateString() === today;
+            const matchesUser = role === 'SUPER_ADMIN' || s.user_id === userId;
+            return matchesDate && matchesUser;
+        })
         .reduce((sum, s) => sum + s.total, 0);
+}
+
+// --- MANAGEMENT PENGGUNA (ROLE AUTHENTICATION) ---
+
+export function loginUser(username, password) {
+    const cleanUsername = (username || '').trim().toLowerCase();
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    
+    const user = users.find(u => u.username.toLowerCase() === cleanUsername && u.password === password);
+    if (user) {
+        setCurrentUser(user);
+        return user;
+    }
+    return null;
+}
+
+export function registerUser(user) {
+    const users = JSON.parse(localStorage.getItem('users') || '[]');
+    const cleanUsername = (user.username || '').trim();
+    
+    const exists = users.some(u => u.username.toLowerCase() === cleanUsername.toLowerCase());
+    if (exists) throw new Error(`Username "${cleanUsername}" sudah digunakan.`);
+
+    const newUser = {
+        id: Date.now(),
+        username: cleanUsername,
+        password: user.password,
+        full_name: user.fullName,
+        role: user.role || 'ADMIN',
+        email: user.email || `${cleanUsername}@kasir.com`
+    };
+    
+    users.push(newUser);
+    localStorage.setItem('users', JSON.stringify(users));
+    return newUser;
+}
+
+export function getUsers() {
+    const users = localStorage.getItem('users');
+    return users ? JSON.parse(users) : [];
+}
+
+export function deleteUser(id) {
+    const users = getUsers();
+    const user = users.find(u => u.id === id);
+    if (user && user.username === 'admin') {
+        throw new Error("Akun default administrator tidak dapat dihapus!");
+    }
+    
+    const filtered = users.filter(u => u.id !== id);
+    localStorage.setItem('users', JSON.stringify(filtered));
+}
+
+export function getCurrentUser() {
+    const user = sessionStorage.getItem('current_user') || localStorage.getItem('current_user');
+    return user ? JSON.parse(user) : null;
+}
+
+export function setCurrentUser(user, rememberMe = true) {
+    const data = JSON.stringify(user);
+    if (rememberMe) {
+        localStorage.setItem('current_user', data);
+    }
+    sessionStorage.setItem('current_user', data);
+}
+
+export function logoutUser() {
+    sessionStorage.removeItem('current_user');
+    localStorage.removeItem('current_user');
 }
