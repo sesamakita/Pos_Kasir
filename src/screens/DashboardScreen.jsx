@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
-    LayoutDashboard, CubeIcon, Receipt, BarChart3, Settings, 
+    LayoutDashboard, Box, Receipt, BarChart3, Settings, 
     Users, LogOut, ChevronRight, ShoppingBag, ArrowUpRight 
 } from 'lucide-react';
 import * as db from '../services/db';
@@ -98,7 +98,7 @@ export default function DashboardScreen() {
                     </div>
                     
                     <div className="grid-card card-purple" onClick={() => navigate('/inventory')}>
-                        <div className="grid-icon-box"><CubeIcon size={24} color="#9b59b6" /></div>
+                        <div className="grid-icon-box"><Box size={24} color="#9b59b6" /></div>
                         <h4>Inventaris</h4>
                         <p>Kelola Stok & Barang</p>
                     </div>
