@@ -183,10 +183,19 @@ export default function POSScreen() {
                                     onClick={() => p.stock > 0 && addToCart(p)}
                                 >
                                     {p.image_uri ? (
-                                        <img src={p.image_uri} alt={p.name} className="product-image" />
-                                    ) : (
-                                        <div className="product-image-placeholder">📦</div>
-                                    )}
+                                        <img 
+                                            src={p.image_uri} 
+                                            alt={p.name} 
+                                            className="product-image" 
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div className="product-image-placeholder" style={{ display: p.image_uri ? 'none' : 'flex' }}>
+                                        📦
+                                    </div>
                                     <div className="product-info-box">
                                         <h4 className="prod-title">{p.name}</h4>
                                         <div className="prod-footer-row">

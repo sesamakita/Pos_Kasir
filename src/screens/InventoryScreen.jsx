@@ -229,10 +229,19 @@ export default function InventoryScreen() {
                             <div className="item-left">
                                 <div className="icon-box">
                                     {item.image_uri ? (
-                                        <img src={item.image_uri} alt="" className="product-icon" />
-                                    ) : (
+                                        <img 
+                                            src={item.image_uri} 
+                                            alt="" 
+                                            className="product-icon" 
+                                            onError={(e) => {
+                                                e.target.style.display = 'none';
+                                                e.target.nextSibling.style.display = 'flex';
+                                            }}
+                                        />
+                                    ) : null}
+                                    <div className="product-icon-placeholder" style={{ display: item.image_uri ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
                                         <Box size={24} color="#3498db" />
-                                    )}
+                                    </div>
                                     {item.stock < 10 && <div className="low-stock-badge"><AlertCircle size={12} color="white" /></div>}
                                 </div>
                                 <div className="item-info">
