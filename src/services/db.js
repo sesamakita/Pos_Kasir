@@ -29,6 +29,17 @@ function initDefaultData() {
         ];
         localStorage.setItem('users', JSON.stringify(defaultUsers));
     }
+
+    if (!localStorage.getItem('store_settings')) {
+        const defaultSettings = {
+            store_name: 'Warung Sesama Kita',
+            store_address: 'Jl. Sukarno-Hatta No. 45, Palu',
+            store_phone: '08123456789',
+            store_logo: null,
+            splash_color: '#B8860B'
+        };
+        localStorage.setItem('store_settings', JSON.stringify(defaultSettings));
+    }
 }
 
 // Jalankan inisialisasi default
@@ -99,6 +110,7 @@ export async function resetDatabase() {
     localStorage.removeItem('sales');
     localStorage.removeItem('users');
     localStorage.removeItem('current_user');
+    localStorage.removeItem('store_settings');
     initDefaultData();
 }
 
@@ -226,4 +238,27 @@ export function setCurrentUser(user, rememberMe = true) {
 export function logoutUser() {
     sessionStorage.removeItem('current_user');
     localStorage.removeItem('current_user');
+}
+
+// --- MANAGEMENT PROFIL TOKO ---
+
+export function getStoreSettings() {
+    const settings = localStorage.getItem('store_settings');
+    return settings ? JSON.parse(settings) : {
+        store_name: 'Warung Sesama Kita',
+        store_address: 'Jl. Sukarno-Hatta No. 45, Palu',
+        store_phone: '08123456789',
+        store_logo: null,
+        splash_color: '#B8860B'
+    };
+}
+
+export function updateStoreSettings(settings) {
+    const current = getStoreSettings();
+    const updated = {
+        ...current,
+        ...settings
+    };
+    localStorage.setItem('store_settings', JSON.stringify(updated));
+    return updated;
 }
