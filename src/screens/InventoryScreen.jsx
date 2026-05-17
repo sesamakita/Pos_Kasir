@@ -143,14 +143,8 @@ export default function InventoryScreen() {
     };
 
     const handleOpenAddCategory = () => {
-        const randomSuffix = Math.floor(100 + Math.random() * 900);
-        setNewCategoryName(`Kategori ${randomSuffix}`);
+        setNewCategoryName('');
         setAddCategoryVisible(true);
-    };
-
-    const handleRandomizeCategoryName = () => {
-        const randomSuffix = Math.floor(100 + Math.random() * 900);
-        setNewCategoryName(`Kategori ${randomSuffix}`);
     };
 
     const handleSaveCategory = async () => {
@@ -375,18 +369,13 @@ export default function InventoryScreen() {
                         <div className="modal-body">
                             <div className="input-group">
                                 <label>Nama Kategori</label>
-                                <div className="random-input-row">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Masukkan nama kategori" 
-                                        value={newCategoryName} 
-                                        onChange={e => setNewCategoryName(e.target.value)} 
-                                        autoFocus
-                                    />
-                                    <button type="button" className="btn-randomize" onClick={handleRandomizeCategoryName} title="Acak Nama Baru">
-                                        🎲
-                                    </button>
-                                </div>
+                                <input 
+                                    type="text" 
+                                    placeholder="Masukkan nama kategori" 
+                                    value={newCategoryName} 
+                                    onChange={e => setNewCategoryName(e.target.value)} 
+                                    autoFocus
+                                />
                             </div>
                             <div className="modal-actions">
                                 <button className="cancel-button" onClick={() => setAddCategoryVisible(false)}>Batal</button>
