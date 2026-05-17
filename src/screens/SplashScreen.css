@@ -1,0 +1,49 @@
+.splash-container {
+    height: 100vh;
+    background-color: #4CAF7D;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-family: 'Inter', sans-serif;
+}
+.splash-bag {
+    background-color: #E87A32;
+    padding: 24px;
+    border-radius: 28px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
+    animation: bounce 2s infinite;
+}
+@keyframes bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+}
+.splash-dots {
+    display: flex;
+    gap: 8px;
+    position: absolute;
+    bottom: 25vh;
+}
+.splash-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background-color: white;
+    opacity: 0.5;
+    animation: blink 1.2s infinite;
+}
+.dot-1 { animation-delay: 0s; }
+.dot-2 { animation-delay: 0.2s; }
+.dot-3 { animation-delay: 0.4s; }
+@keyframes blink {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 1; }
+}
+.splash-footer {
+    position: absolute;
+    bottom: 40px;
+    text-align: center;
+    color: #1A1A1A;
+}
+.splash-footer p { margin: 0 0 4px; font-size: 14px; }
+.splash-footer h3 { margin: 0; font-size: 20px; font-weight: 900; letter-spacing: 2px; }
