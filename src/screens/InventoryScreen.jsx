@@ -4,7 +4,7 @@ import { Camera, CameraResultType } from '@capacitor/camera';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Ocr } from '@jcesarmobile/capacitor-ocr';
 import * as db from '../services/db';
-import { Search, SlidersHorizontal, Plus, Trash2, Box, AlertCircle, Camera as CameraIcon, ScanLine, X, ChevronLeft } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Trash2, Box, AlertCircle, Camera as CameraIcon, ScanLine, X, ChevronLeft, ChevronDown } from 'lucide-react';
 
 export default function InventoryScreen() {
     const isSuperAdmin = true; // Hardcoded for demo
@@ -30,6 +30,9 @@ export default function InventoryScreen() {
     // States untuk modal Add Category baru yang interaktif
     const [isAddCategoryVisible, setAddCategoryVisible] = useState(false);
     const [newCategoryName, setNewCategoryName] = useState('');
+    
+    // State untuk Custom Category Picker
+    const [isCategoryPickerVisible, setIsCategoryPickerVisible] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -316,9 +319,10 @@ export default function InventoryScreen() {
                             <div className="input-group">
                                 <label>Kategori</label>
                                 <div className="category-select-row">
-                                    <select value={newProduct.category_id} onChange={e => setNewProduct({...newProduct, category_id: parseInt(e.target.value)})}>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                    </select>
+                                    <div className="custom-select-box" onClick={() => setIsCategoryPickerVisible(true)}>
+                                        <span>{categories.find(c => c.id === newProduct.category_id)?.name || 'Pilih Kategori'}</span>
+                                        <ChevronDown size={18} color="#7f8c8d" />
+                                    </div>
                                     <button type="button" className="btn-add-category" onClick={handleOpenAddCategory}>
                                         <Plus size={20} color="white" />
                                     </button>
@@ -388,6 +392,36 @@ export default function InventoryScreen() {
                                 <button className="cancel-button" onClick={() => setAddCategoryVisible(false)}>Batal</button>
                                 <button className="primary-button" onClick={handleSaveCategory}>Simpan</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CUSTOM CATEGORY PICKER MODAL */}
+            {isCategoryPickerVisible && (
+                <div className="modal-overlay sub-modal-overlay">
+                    <div className="modal-content category-picker-modal">
+                        <div className="modal-header">
+                            <h3>Pilih Kategori</h3>
+                            <button onClick={() => setIsCategoryPickerVisible(false)} className="close-btn"><X size={24} /></button>
+                        </div>
+                        <div className="modal-body category-picker-list">
+                            {categories.map(c => {
+                                const isSelected = c.id === newProduct.category_id;
+                                return (
+                                    <div 
+                                        key={c.id} 
+                                        className={`category-picker-item ${isSelected ? 'selected-picker-item' : ''}`}
+                                        onClick={() => {
+                                            setNewProduct(p => ({ ...p, category_id: c.id }));
+                                            setIsCategoryPickerVisible(false);
+                                        }}
+                                    >
+                                        <span>{c.name}</span>
+                                        {isSelected && <div className="selected-dot" />}
+                                    </div>
+                                );
+                            })}
                         </div>
                     </div>
                 </div>
