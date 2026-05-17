@@ -202,23 +202,25 @@
     top: 0; left: 0; right: 0; bottom: 0;
     background: rgba(0,0,0,0.5);
     display: flex;
-    align-items: flex-end;
+    align-items: center; /* Tengah layar */
     justify-content: center;
     z-index: 1000;
+    padding: 16px;
 }
 
 .modal-content {
     background: white;
     width: 100%;
     max-width: 500px;
-    border-radius: 24px 24px 0 0;
+    border-radius: 24px; /* Melengkung di semua sudut */
     padding: 24px;
-    animation: slideUp 0.3s ease;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+    animation: fadeInScale 0.2s ease; /* Efek membesar */
 }
 
-@keyframes slideUp {
-    from { transform: translateY(100%); }
-    to { transform: translateY(0); }
+@keyframes fadeInScale {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
 }
 
 .modal-header {
