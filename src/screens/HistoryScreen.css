@@ -1,0 +1,334 @@
+/* Search and Filters */
+.search-filter-row {
+    margin-bottom: 12px;
+}
+
+.history-search-box {
+    display: flex;
+    align-items: center;
+    background: white;
+    border: 2px solid #eef0f2;
+    border-radius: 16px;
+    padding: 10px 16px;
+    gap: 10px;
+    position: relative;
+}
+
+.history-search-box input {
+    border: none;
+    outline: none;
+    font-size: 13px;
+    font-weight: 600;
+    color: #2c3e50;
+    width: 100%;
+}
+
+.clear-search-btn {
+    background: transparent;
+    border: none;
+    color: #bdc3c7;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+}
+
+/* Filter Chips */
+.filter-chips-row {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 6px;
+    margin-bottom: 10px;
+}
+
+.filter-chips-row::-webkit-scrollbar {
+    height: 4px;
+}
+
+.filter-chips-row::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.05);
+    border-radius: 4px;
+}
+
+.filter-chip {
+    padding: 8px 14px;
+    border-radius: 12px;
+    border: 1px solid #eef0f2;
+    background: white;
+    color: #7f8c8d;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.filter-chip:hover {
+    border-color: #bdc3c7;
+}
+
+.filter-chip.active-chip {
+    background: #2c3e50;
+    color: white;
+    border-color: #2c3e50;
+}
+
+.clickable-history-card {
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.clickable-history-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.04);
+}
+
+.waiter-name-tag {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 10px;
+    color: #7f8c8d;
+    margin-top: 4px;
+    font-weight: 600;
+}
+
+/* Virtual Thermal Receipt Modal */
+.thermal-receipt-modal {
+    width: 340px;
+    max-width: 90vw;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.thermal-receipt-paper {
+    background: #fbfbfb;
+    border-radius: 4px;
+    padding: 24px 20px;
+    position: relative;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    font-family: 'Courier New', Courier, monospace;
+    color: #2c3e50;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
+
+/* Top Tear Edge */
+.tear-edge {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 8px;
+    background-image: linear-gradient(135deg, transparent 4px, #fbfbfb 4px), linear-gradient(-135deg, transparent 4px, #fbfbfb 4px);
+    background-size: 8px 8px;
+    background-repeat: repeat-x;
+    transform: rotate(180deg);
+}
+
+.receipt-header {
+    text-align: center;
+    margin-bottom: 14px;
+}
+
+.receipt-store-title {
+    font-size: 16px;
+    font-weight: bold;
+    margin: 0 0 4px 0;
+    color: #2c3e50;
+}
+
+.receipt-store-subtitle {
+    font-size: 11px;
+    color: #7f8c8d;
+    margin: 0 0 2px 0;
+    line-height: 1.3;
+}
+
+.receipt-store-phone {
+    font-size: 10px;
+    color: #7f8c8d;
+}
+
+.receipt-divider {
+    border-top: 1px dashed #bdc3c7;
+    margin: 12px 0;
+    width: 100%;
+}
+
+.receipt-info-meta {
+    font-size: 10px;
+    line-height: 1.5;
+    color: #555;
+}
+
+.receipt-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.receipt-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.receipt-item-desc {
+    display: flex;
+    flex-direction: column;
+    max-width: 70%;
+}
+
+.item-name-receipt {
+    font-size: 12px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.item-qty-price-receipt {
+    font-size: 10px;
+    color: #7f8c8d;
+    margin-top: 2px;
+}
+
+.receipt-item-subtotal {
+    font-size: 11px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.receipt-totals {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.total-main-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    font-weight: 800;
+    color: #2c3e50;
+}
+
+.payment-method-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #7f8c8d;
+}
+
+/* Signature block */
+.receipt-signature-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-top: 1px dashed #ccc;
+    padding-top: 12px;
+    margin-top: 16px;
+}
+
+.sig-label {
+    font-size: 9px;
+    color: #7f8c8d;
+    text-transform: uppercase;
+}
+
+.receipt-sig-img {
+    width: 110px;
+    height: 55px;
+    object-fit: contain;
+    margin: 4px 0;
+    filter: contrast(1.2);
+}
+
+.sig-waiter {
+    font-size: 10px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.receipt-signature-missing {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #7f8c8d;
+    margin-top: 12px;
+}
+
+.sig-waiter-nosig {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.receipt-footer {
+    text-align: center;
+    margin-top: 18px;
+    font-size: 9px;
+    color: #95a5a6;
+    line-height: 1.4;
+}
+
+/* Receipt Dialog Actions */
+.receipt-modal-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    width: 100%;
+}
+
+.action-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: transform 0.2s ease, filter 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+
+.action-btn:active {
+    transform: scale(0.98);
+}
+
+.btn-print-receipt {
+    background: #2ecc71;
+    color: white;
+}
+
+.btn-void-receipt {
+    background: #e74c3c;
+    color: white;
+}
+
+.btn-close-receipt {
+    background: white;
+    border: 2px solid #eef0f2;
+    color: #7f8c8d;
+}
+
+/* Micro animations */
+.animate-slide-up {
+    animation: slideUp 0.3s ease-out forwards;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

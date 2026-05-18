@@ -479,3 +479,35 @@
         box-shadow: 0 -4px 10px rgba(0,0,0,0.05);
     }
 }
+
+/* OFFLINE STATUS PILL INDICATOR */
+.offline-mode-badge-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(231, 76, 60, 0.08);
+    border: 1px solid rgba(231, 76, 60, 0.25);
+    color: #e74c3c;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 20px;
+    text-transform: uppercase;
+    animation: pulseGlow 2.5s infinite;
+}
+
+@keyframes pulseGlow {
+    0% { opacity: 0.85; }
+    50% { opacity: 1; transform: scale(1.02); }
+    100% { opacity: 0.85; }
+}
+
+/* CHECKOUT LIVE SIGNATURE PAD */
+.pos-checkout-signature-section {
+    background: white;
+    border: 1.5px solid #eef0f2;
+    border-radius: 20px;
+    padding: 14px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+}
+

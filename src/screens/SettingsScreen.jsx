@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Info, HelpCircle, Database, Store, MapPin, Phone, Edit2, ShieldAlert } from 'lucide-react';
+import { ChevronLeft, Info, HelpCircle, Database, Store, MapPin, Phone, Edit2, ShieldAlert, User, FileText } from 'lucide-react';
 import * as db from '../services/db';
 
 export default function SettingsScreen() {
@@ -36,6 +36,10 @@ export default function SettingsScreen() {
     const headerBorderColor = isSuper ? '#B8860B30' : '#3498db30';
     const headerTitleColor = isSuper ? '#8B6508' : '#2c3e50';
 
+    const initials = currentUser.full_name 
+        ? currentUser.full_name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        : '??';
+
     return (
         <div className="dashboard-container" style={{ paddingBottom: 40 }}>
             {/* Header */}
@@ -49,6 +53,58 @@ export default function SettingsScreen() {
             </div>
 
             <div style={{ padding: 20 }}>
+                {/* Personal Profile Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                    <h3 className="section-heading" style={{ margin: 0 }}>Profil Saya</h3>
+                    <button 
+                        onClick={() => navigate('/edit-profile')}
+                        style={{ 
+                            background: isSuper ? '#B8860B' : '#3498db', 
+                            color: 'white', 
+                            border: 'none', 
+                            borderRadius: 10, 
+                            padding: '6px 12px', 
+                            fontSize: 12, 
+                            fontWeight: 'bold', 
+                            cursor: 'pointer', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: 6,
+                            boxShadow: isSuper ? '0 4px 8px rgba(184,134,11,0.15)' : '0 4px 8px rgba(52,152,219,0.15)'
+                        }}
+                    >
+                        <Edit2 size={12} />
+                        Edit Profil
+                    </button>
+                </div>
+
+                <div className="activity-list" style={{ border: isSuper ? '2px solid #B8860B15' : '2px solid #eef0f2', marginBottom: 28, padding: '14px 16px', display: 'flex', gap: 16, alignItems: 'center', background: 'white', borderRadius: 20 }}>
+                    <div style={{ 
+                        width: 64, 
+                        height: 64, 
+                        borderRadius: '50%', 
+                        background: isSuper ? '#B8860B' : '#3498db',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        overflow: 'hidden',
+                        flexShrink: 0
+                    }}>
+                        {currentUser.profile_photo ? (
+                            <img src={currentUser.profile_photo} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                            <span style={{ fontSize: 22, fontWeight: '800', color: 'white' }}>{initials}</span>
+                        )}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <span style={{ fontSize: 15, fontWeight: '800', color: '#2c3e50' }}>{currentUser.full_name}</span>
+                        <span style={{ fontSize: 11, color: isSuper ? '#B8860B' : '#3498db', fontWeight: '700', textTransform: 'uppercase', background: isSuper ? 'rgba(184,134,11,0.1)' : 'rgba(52,152,219,0.1)', padding: '2px 8px', borderRadius: 8, width: 'fit-content' }}>
+                            {isSuper ? '👑 Super Admin' : '👤 Staff Kasir'}
+                        </span>
+                        {currentUser.bio && <span style={{ fontSize: 11, color: '#7f8c8d', fontStyle: 'italic', marginTop: 4 }}>{currentUser.bio}</span>}
+                    </div>
+                </div>
+
                 {/* Store Profile Section */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                     <h3 className="section-heading" style={{ margin: 0 }}>Profil Toko</h3>
@@ -71,7 +127,7 @@ export default function SettingsScreen() {
                             }}
                         >
                             <Edit2 size={12} />
-                            Edit Profil
+                            Edit Profil Toko
                         </button>
                     )}
                 </div>

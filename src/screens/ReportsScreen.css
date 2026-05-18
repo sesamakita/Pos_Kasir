@@ -1,0 +1,103 @@
+.btn-export-closing {
+    border: none;
+    color: white;
+    border-radius: 10px;
+    padding: 6px 12px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease;
+}
+
+.btn-export-closing:active {
+    transform: scale(0.96);
+}
+
+.report-chart-box {
+    background: white;
+    border: 2px solid #eef0f2;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    margin-bottom: 24px;
+}
+
+/* Security Audit Logging list styles */
+.security-audit-box {
+    background: white;
+    border: 2px solid #eef0f2;
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+    margin-bottom: 20px;
+}
+
+.audit-logs-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-height: 380px;
+    overflow-y: auto;
+    padding-right: 6px;
+}
+
+.audit-logs-list::-webkit-scrollbar {
+    width: 5px;
+}
+
+.audit-logs-list::-webkit-scrollbar-thumb {
+    background: rgba(0,0,0,0.06);
+    border-radius: 10px;
+}
+
+.audit-log-item {
+    border-bottom: 1px solid #f1f2f6;
+    padding-bottom: 12px;
+}
+
+.audit-log-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.audit-log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+}
+
+.action-badge {
+    font-size: 9px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+}
+
+.audit-time-stamp {
+    font-size: 10px;
+    color: #95a5a6;
+    font-weight: 500;
+}
+
+.audit-log-details {
+    font-size: 12px;
+    color: #2c3e50;
+    margin: 4px 0 6px 0;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+.audit-log-footer {
+    font-size: 10px;
+    color: #7f8c8d;
+}
+
+.audit-log-footer strong {
+    color: #2c3e50;
+}

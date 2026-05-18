@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, WifiOff, PenTool } from 'lucide-react';
 import * as db from '../services/db';
 import { printReceipt } from '../services/PrinterService';
 import './POSScreen.css';
@@ -8,6 +8,7 @@ import './POSScreen.css';
 export default function POSScreen() {
     const navigate = useNavigate();
     const searchInputRef = useRef(null);
+    const canvasRef = useRef(null);
 
     const [products, setProducts] = useState([]);
     const [categories, setCategories] = useState([]);
@@ -27,6 +28,10 @@ export default function POSScreen() {
     const [isPayModalVisible, setPayModalVisible] = useState(false);
     const [cashAmount, setCashAmount] = useState('');
     const [checkoutTrx, setCheckoutTrx] = useState(null);
+
+    // Signature Pad State
+    const [isDrawing, setIsDrawing] = useState(false);
+    const [hasDrawn, setHasDrawn] = useState(false);
 
     // Dynamic Store settings & Cashier state
     const [storeSettings, setStoreSettings] = useState(null);
@@ -187,11 +192,63 @@ export default function POSScreen() {
         localStorage.setItem('pos_drafts', JSON.stringify(updated));
     };
 
+    // --- INTERACTIVE DIGITAL SIGNATURE PAD ---
+    const startDrawing = (e) => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#2c3e50';
+        ctx.lineWidth = 3;
+        ctx.lineCap = 'round';
+        
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        ctx.beginPath();
+        ctx.moveTo(x, y);
+        setIsDrawing(true);
+    };
+
+    const draw = (e) => {
+        if (!isDrawing) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        
+        const rect = canvas.getBoundingClientRect();
+        const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+        const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+        
+        const x = clientX - rect.left;
+        const y = clientY - rect.top;
+        
+        ctx.lineTo(x, y);
+        ctx.stroke();
+        setHasDrawn(true);
+    };
+
+    const endDrawing = () => {
+        setIsDrawing(false);
+    };
+
+    const clearSignature = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        setHasDrawn(false);
+    };
+
     // Payment Processing
     const handleCheckout = () => {
         if (cart.length === 0) return alert("Keranjang belanja kosong!");
         setPayModalVisible(true);
         setCashAmount(totalAmount.toString()); // Default nominal pas
+        setHasDrawn(false);
     };
 
     const submitPayment = async () => {
@@ -199,6 +256,12 @@ export default function POSScreen() {
         if (isNaN(payVal) || payVal < totalAmount) {
             alert("Jumlah uang tunai kurang dari total tagihan!");
             return;
+        }
+
+        // Capture digital signature (base64)
+        let signatureData = currentUser?.signature || null;
+        if (!signatureData && hasDrawn && canvasRef.current) {
+            signatureData = canvasRef.current.toDataURL('image/png');
         }
 
         const saleItems = cart.map(item => ({
@@ -209,14 +272,17 @@ export default function POSScreen() {
         }));
 
         try {
-            const transaction = await db.addSale(saleItems, totalAmount);
+            // Save sale to database with signature parameter
+            const transaction = await db.addSale(saleItems, totalAmount, signatureData);
+            
             const receiptData = {
                 id: transaction.id,
                 total: totalAmount,
                 cash: payVal,
                 change: payVal - totalAmount,
                 items: saleItems,
-                date: transaction.date
+                date: transaction.date,
+                signature: signatureData
             };
 
             setCheckoutTrx(receiptData);
@@ -232,7 +298,8 @@ export default function POSScreen() {
                 change: payVal - totalAmount,
                 date: transaction.date,
                 cashierName: currentUser?.full_name || 'Admin',
-                orderId: transaction.id
+                orderId: transaction.id,
+                signature: signatureData
             });
 
             // Reset states
@@ -240,6 +307,7 @@ export default function POSScreen() {
             setPayModalVisible(false);
             loadPOSData(); // Reload stocks
         } catch (err) {
+            console.error(err);
             alert("Gagal memproses transaksi.");
         }
     };
@@ -256,7 +324,8 @@ export default function POSScreen() {
             change: checkoutTrx.change,
             date: checkoutTrx.date,
             cashierName: currentUser?.full_name || 'Admin',
-            orderId: checkoutTrx.id
+            orderId: checkoutTrx.id,
+            signature: checkoutTrx.signature
         });
     };
 
@@ -271,15 +340,23 @@ export default function POSScreen() {
         return val - totalAmount;
     }, [cashAmount, totalAmount]);
 
+    const isSuper = currentUser?.role === 'SUPER_ADMIN';
+
     return (
         <div className="pos-container">
             {/* Header */}
-            <div className="pos-header" style={{ borderBottom: currentUser?.role === 'SUPER_ADMIN' ? '1px solid #B8860B30' : '1px solid #3498db30' }}>
+            <div className="pos-header" style={{ borderBottom: isSuper ? '1px solid #B8860B30' : '1px solid #3498db30' }}>
                 <div className="header-left">
                     <button className="icon-btn" onClick={() => navigate('/dashboard')}>
-                        <ChevronLeft size={24} color={currentUser?.role === 'SUPER_ADMIN' ? '#8B6508' : '#2c3e50'} />
+                        <ChevronLeft size={24} color={isSuper ? '#8B6508' : '#2c3e50'} />
                     </button>
-                    <h1 style={{ color: currentUser?.role === 'SUPER_ADMIN' ? '#8B6508' : '#2c3e50' }}>Kasir POS</h1>
+                    <h1 style={{ color: isSuper ? '#8B6508' : '#2c3e50' }}>Kasir POS</h1>
+                    
+                    {/* Offline Session Mode Badge */}
+                    <div className="offline-mode-badge-pill">
+                        <WifiOff size={11} />
+                        <span>Offline Local</span>
+                    </div>
                 </div>
                 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
@@ -294,8 +371,8 @@ export default function POSScreen() {
                     </button>
 
                     <div className="cart-badge-container">
-                        <ShoppingCart size={20} color={currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#3498db'} />
-                        {cart.length > 0 && <span className="cart-badge-count" style={{ background: currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#3498db' }}>{cart.length}</span>}
+                        <ShoppingCart size={20} color={isSuper ? '#B8860B' : '#3498db'} />
+                        {cart.length > 0 && <span className="cart-badge-count" style={{ background: isSuper ? '#B8860B' : '#3498db' }}>{cart.length}</span>}
                     </div>
                 </div>
             </div>
@@ -360,7 +437,7 @@ export default function POSScreen() {
                                     onClick={() => setSelectedCatId(c.id)}
                                     style={{
                                         background: selectedCatId === c.id 
-                                            ? (currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#3498db') 
+                                            ? (isSuper ? '#B8860B' : '#3498db') 
                                             : '#f1f2f6',
                                         color: selectedCatId === c.id ? 'white' : '#2c3e50'
                                     }}
@@ -403,7 +480,7 @@ export default function POSScreen() {
                                     <div className="product-info-box">
                                         <h4 className="prod-title">{p.name}</h4>
                                         <div className="prod-footer-row">
-                                            <span className="prod-price" style={{ color: currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#2980b9' }}>Rp {p.price.toLocaleString('id-ID')}</span>
+                                            <span className="prod-price" style={{ color: isSuper ? '#B8860B' : '#2980b9' }}>Rp {p.price.toLocaleString('id-ID')}</span>
                                             <span className={`prod-stock ${p.stock < 10 ? 'low-stock-lbl' : ''}`}>
                                                 Stok: {p.stock}
                                             </span>
@@ -480,8 +557,8 @@ export default function POSScreen() {
                             disabled={cart.length === 0}
                             onClick={handleCheckout}
                             style={{ 
-                                background: currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#3498db',
-                                boxShadow: currentUser?.role === 'SUPER_ADMIN' ? '0 4px 10px rgba(184, 134, 11, 0.2)' : '0 4px 10px rgba(52, 152, 219, 0.2)'
+                                background: isSuper ? '#B8860B' : '#3498db',
+                                boxShadow: isSuper ? '0 4px 10px rgba(184, 134, 11, 0.2)' : '0 4px 10px rgba(52, 152, 219, 0.2)'
                             }}
                         >
                             Bayar Sekarang (Rp {totalAmount.toLocaleString('id-ID')})
@@ -560,7 +637,7 @@ export default function POSScreen() {
             {/* PAYMENT INPUT MODAL */}
             {isPayModalVisible && (
                 <div className="modal-overlay">
-                    <div className="modal-content payment-modal">
+                    <div className="modal-content payment-modal" style={{ maxWidth: 440 }}>
                         <h3>Input Pembayaran</h3>
                         <p className="pay-total-lbl">Total Tagihan: <b>Rp {totalAmount.toLocaleString('id-ID')}</b></p>
                         
@@ -585,7 +662,7 @@ export default function POSScreen() {
                         </div>
 
                         {/* Real-time Change Indicator */}
-                        <div style={{ marginTop: 20, padding: 14, borderRadius: 16, background: '#f8f9fa', border: '1px solid #eef0f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ marginTop: 16, padding: 14, borderRadius: 16, background: '#f8f9fa', border: '1px solid #eef0f2', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ fontSize: 13, color: '#7f8c8d', fontWeight: 'bold' }}>Kembalian Kasir:</span>
                             {currentChange >= 0 ? (
                                 <strong style={{ fontSize: 18, color: '#2ecc71' }}>Rp {currentChange.toLocaleString('id-ID')}</strong>
@@ -596,15 +673,67 @@ export default function POSScreen() {
                             )}
                         </div>
 
+                        {/* CASHIER DIGITAL SIGNATURE WRAPPER */}
+                        <div className="pos-checkout-signature-section" style={{ marginTop: 20 }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                                <span style={{ fontSize: 12, fontWeight: 'bold', color: '#7f8c8d', display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <PenTool size={13} color={isSuper ? '#B8860B' : '#3498db'} />
+                                    Tanda Tangan Kasir
+                                </span>
+                                {(!currentUser?.signature && hasDrawn) && (
+                                    <button 
+                                        type="button" 
+                                        onClick={clearSignature}
+                                        style={{ background: 'transparent', border: 'none', color: '#e74c3c', fontSize: 11, fontWeight: 'bold', cursor: 'pointer' }}
+                                    >
+                                        Hapus
+                                    </button>
+                                )}
+                            </div>
+
+                            {currentUser?.signature ? (
+                                <div style={{ background: '#f8f9fa', border: '2px solid #eef0f2', borderRadius: 16, padding: '10px 14px', display: 'flex', gap: 14, alignItems: 'center' }}>
+                                    <img src={currentUser.signature} alt="" style={{ width: 80, height: 40, objectFit: 'contain', background: 'white', border: '1px solid #ddd', borderRadius: 8 }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontSize: 12, fontWeight: 'bold', color: '#2c3e50' }}>{currentUser.full_name}</span>
+                                        <span style={{ fontSize: 10, color: '#95a5a6' }}>Tanda Tangan Otomatis Profil</span>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div style={{ border: '2px dashed #bdc3c7', borderRadius: 16, overflow: 'hidden', background: '#fcfcfc', position: 'relative' }}>
+                                    <canvas 
+                                        ref={canvasRef}
+                                        width={390}
+                                        height={90}
+                                        onMouseDown={startDrawing}
+                                        onMouseMove={draw}
+                                        onMouseUp={endDrawing}
+                                        onMouseLeave={endDrawing}
+                                        onTouchStart={startDrawing}
+                                        onTouchMove={draw}
+                                        onTouchEnd={endDrawing}
+                                        style={{ cursor: 'crosshair', display: 'block', width: '100%' }}
+                                    />
+                                    {!hasDrawn && (
+                                        <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none', background: 'transparent', gap: 8 }}>
+                                            <span style={{ fontSize: 11, color: '#bdc3c7', fontWeight: 'bold' }}>Goreskan tanda tangan di sini...</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
                         <div className="modal-actions" style={{ marginTop: 20 }}>
                             <button className="cancel-button" onClick={() => setPayModalVisible(false)}>Batal</button>
                             <button 
                                 className="primary-button" 
                                 onClick={submitPayment}
-                                disabled={currentChange < 0}
+                                disabled={currentChange < 0 || (!currentUser?.signature && !hasDrawn)}
                                 style={{
-                                    background: currentChange < 0 ? '#bdc3c7' : (currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#3498db'),
-                                    cursor: currentChange < 0 ? 'not-allowed' : 'pointer'
+                                    background: (currentChange < 0 || (!currentUser?.signature && !hasDrawn)) 
+                                        ? '#bdc3c7' 
+                                        : (isSuper ? '#B8860B' : '#3498db'),
+                                    cursor: (currentChange < 0 || (!currentUser?.signature && !hasDrawn)) ? 'not-allowed' : 'pointer'
                                 }}
                             >
                                 Konfirmasi Pembayaran
@@ -618,7 +747,7 @@ export default function POSScreen() {
             {checkoutTrx && (
                 <div className="modal-overlay">
                     <div className="modal-content success-trx-modal">
-                        <div className="success-icon-circle" style={{ background: currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#2ecc71' }}><Check size={36} color="white" /></div>
+                        <div className="success-icon-circle" style={{ background: isSuper ? '#B8860B' : '#2ecc71' }}><Check size={36} color="white" /></div>
                         <h3>Transaksi Sukses!</h3>
                         <p className="success-trx-id" style={{ fontSize: 11, color: '#7f8c8d' }}>No. TRX: {checkoutTrx.id}</p>
                         
@@ -654,14 +783,14 @@ export default function POSScreen() {
                                 }}
                             >
                                 <Printer size={16} />
-                                Cetak Ulang
+                                Cetak Struk
                             </button>
                             <button 
                                 className="primary-button" 
                                 onClick={closeSuccessModal}
                                 style={{ 
                                     flex: 1,
-                                    background: currentUser?.role === 'SUPER_ADMIN' ? '#B8860B' : '#2ecc71'
+                                    background: isSuper ? '#B8860B' : '#2ecc71'
                                 }}
                             >
                                 Selesai

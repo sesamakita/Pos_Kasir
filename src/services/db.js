@@ -73,6 +73,9 @@ export async function addProduct(prod) {
     };
     prods.push(newProd);
     localStorage.setItem('products', JSON.stringify(prods));
+    
+    // Log activity
+    addActivityLog("TAMBAH_PRODUK", `Menambahkan produk baru "${newProd.name}" ke inventaris`);
     return newProd;
 }
 
@@ -87,6 +90,9 @@ export async function addCategory(name) {
     const newCat = { id: Date.now(), name: cleanName };
     cats.push(newCat);
     localStorage.setItem('categories', JSON.stringify(cats));
+    
+    // Log activity
+    addActivityLog("TAMBAH_KATEGORI", `Menambahkan kategori baru "${newCat.name}"`);
     return newCat;
 }
 
@@ -96,12 +102,21 @@ export async function updateStock(id, addQty) {
     if(idx > -1) {
         prods[idx].stock += parseInt(addQty);
         localStorage.setItem('products', JSON.stringify(prods));
+        
+        // Log activity
+        addActivityLog("RESTOCK_PRODUK", `Melakukan restock produk "${prods[idx].name}" sebanyak ${addQty} unit`);
     }
 }
 
 export async function deleteProduct(id) {
     const prods = await getProducts();
+    const prod = prods.find(p => p.id === id);
     localStorage.setItem('products', JSON.stringify(prods.filter(p => p.id !== id)));
+    
+    if (prod) {
+        // Log activity
+        addActivityLog("HAPUS_PRODUK", `Menghapus produk "${prod.name}" dari inventaris`);
+    }
 }
 
 export async function resetDatabase() {
@@ -111,7 +126,11 @@ export async function resetDatabase() {
     localStorage.removeItem('users');
     localStorage.removeItem('current_user');
     localStorage.removeItem('store_settings');
+    localStorage.removeItem('user_activity_logs');
     initDefaultData();
+    
+    // Log activity
+    addActivityLog("RESET_DATABASE", "Melakukan pembersihan total database aplikasi (Factory Reset)");
 }
 
 // --- FITUR TRANSAKSI PENJUALAN (POS & RIWAYAT) ---
@@ -121,7 +140,7 @@ export async function getSales() {
     return data ? JSON.parse(data) : [];
 }
 
-export async function addSale(saleItems, totalAmount) {
+export async function addSale(saleItems, totalAmount, customSignature = null) {
     const sales = await getSales();
     const products = await getProducts();
     const currentUser = getCurrentUser();
@@ -142,11 +161,16 @@ export async function addSale(saleItems, totalAmount) {
         total: totalAmount,
         type: 'sale',
         waiter_name: currentUser ? currentUser.full_name : 'System Admin',
-        user_id: currentUser ? currentUser.id : 1
+        user_id: currentUser ? currentUser.id : 1,
+        // Save cashier signature on receipt if they have one!
+        signature: customSignature || (currentUser ? currentUser.signature : null)
     };
     
     sales.unshift(newSale); // Tambahkan transaksi baru di urutan teratas
     localStorage.setItem('sales', JSON.stringify(sales));
+    
+    // Log activity
+    addActivityLog("TRANSAKSI_POS", `Membuat transaksi kasir baru ${newSale.id} total Rp ${totalAmount.toLocaleString()}`);
     return newSale;
 }
 
@@ -180,6 +204,8 @@ export function loginUser(username, password) {
     const user = users.find(u => u.username.toLowerCase() === cleanUsername && u.password === password);
     if (user) {
         setCurrentUser(user);
+        // Log activity
+        addActivityLog("LOGIN", `Berhasil masuk ke aplikasi sebagai ${user.full_name}`);
         return user;
     }
     return null;
@@ -203,6 +229,9 @@ export function registerUser(user) {
     
     users.push(newUser);
     localStorage.setItem('users', JSON.stringify(users));
+    
+    // Log activity
+    addActivityLog("DAFTAR_KARYAWAN", `Menambahkan karyawan baru "${newUser.full_name}" (${newUser.role})`);
     return newUser;
 }
 
@@ -220,6 +249,11 @@ export function deleteUser(id) {
     
     const filtered = users.filter(u => u.id !== id);
     localStorage.setItem('users', JSON.stringify(filtered));
+    
+    if (user) {
+        // Log activity
+        addActivityLog("HAPUS_KARYAWAN", `Menghapus akses karyawan "${user.full_name}"`);
+    }
 }
 
 export function getCurrentUser() {
@@ -236,6 +270,11 @@ export function setCurrentUser(user, rememberMe = true) {
 }
 
 export function logoutUser() {
+    // Log activity before clearing session
+    const currentUser = getCurrentUser();
+    if (currentUser) {
+        addActivityLog("LOGOUT", `Berhasil keluar dari sesi aplikasi (${currentUser.full_name})`);
+    }
     sessionStorage.removeItem('current_user');
     localStorage.removeItem('current_user');
 }
@@ -262,3 +301,98 @@ export function updateStoreSettings(settings) {
     localStorage.setItem('store_settings', JSON.stringify(updated));
     return updated;
 }
+
+// --- PENGELOLAAN USER & SECURITY LOGS TAMBAHAN ---
+
+export function updateUser(id, data) {
+    const users = getUsers();
+    const idx = users.findIndex(u => u.id === id);
+    if (idx === -1) throw new Error("Pengguna tidak ditemukan.");
+
+    const updatedUser = {
+        ...users[idx],
+        full_name: data.fullName !== undefined ? data.fullName : users[idx].full_name,
+        password: data.password !== undefined ? data.password : users[idx].password,
+        email: data.email !== undefined ? data.email : users[idx].email,
+        phone: data.phone !== undefined ? data.phone : users[idx].phone,
+        bio: data.bio !== undefined ? data.bio : users[idx].bio,
+        profile_photo: data.profile_photo !== undefined ? data.profile_photo : users[idx].profile_photo,
+        signature: data.signature !== undefined ? data.signature : users[idx].signature
+    };
+
+    users[idx] = updatedUser;
+    localStorage.setItem('users', JSON.stringify(users));
+
+    // Update session jika yang sedang login adalah user ini
+    const currentUser = getCurrentUser();
+    if (currentUser && currentUser.id === id) {
+        setCurrentUser(updatedUser);
+    }
+
+    // Tambah log aktivitas
+    addActivityLog("EDIT_PROFIL", `Mengubah profil pribadi ${updatedUser.full_name}`);
+    return updatedUser;
+}
+
+export async function voidSale(saleId) {
+    const sales = await getSales();
+    const products = await getProducts();
+    
+    const saleIdx = sales.findIndex(s => s.id === saleId);
+    if (saleIdx === -1) throw new Error("Transaksi tidak ditemukan.");
+
+    const saleToVoid = sales[saleIdx];
+    
+    // Kembalikan stok barang yang dibeli
+    for (const item of saleToVoid.items) {
+        const prodIdx = products.findIndex(p => p.id === item.id);
+        if (prodIdx > -1) {
+            products[prodIdx].stock += item.quantity;
+        }
+    }
+    
+    // Simpan perubahan produk
+    localStorage.setItem('products', JSON.stringify(products));
+
+    // Hapus transaksi dari daftar penjualan
+    const updatedSales = sales.filter(s => s.id !== saleId);
+    localStorage.setItem('sales', JSON.stringify(updatedSales));
+
+    // Catat ke log aktivitas keamanan
+    const currentUser = getCurrentUser();
+    addActivityLog("VOID_TRANSAKSI", `Membatalkan Transaksi ${saleId} senilai Rp ${saleToVoid.total.toLocaleString()} oleh ${currentUser ? currentUser.full_name : 'System'}`);
+}
+
+// --- LOG AKTIVITAS KEAMANAN (AUDIT LOGS) ---
+
+export function addActivityLog(action, details) {
+    const logs = JSON.parse(localStorage.getItem('user_activity_logs') || '[]');
+    const currentUser = getCurrentUser();
+    
+    const newLog = {
+        id: Date.now(),
+        timestamp: new Date().toISOString(),
+        action: action, // LOGIN, LOGOUT, VOID_TRANSAKSI, EDIT_PROFIL, TAMBAH_PRODUK, DLL
+        details: details,
+        user_name: currentUser ? currentUser.full_name : 'System',
+        user_role: currentUser ? currentUser.role : 'SYSTEM'
+    };
+    
+    logs.unshift(newLog); // Log terbaru di atas
+    localStorage.setItem('user_activity_logs', JSON.stringify(logs.slice(0, 100))); // Batasi maks 100 log
+}
+
+export function getActivityLogs() {
+    const logs = localStorage.getItem('user_activity_logs');
+    if (!logs) {
+        // Seeder awal agar log tidak kosong melompong saat didemo
+        const seedLogs = [
+            { id: 1, timestamp: new Date(Date.now() - 3600000).toISOString(), action: 'LOGIN', details: 'Berhasil login ke aplikasi', user_name: 'Rina Kasir', user_role: 'ADMIN' },
+            { id: 2, timestamp: new Date(Date.now() - 7200000).toISOString(), action: 'TAMBAH_PRODUK', details: 'Menambahkan produk baru "Kopi Susu Gula Aren"', user_name: 'Project Owner', user_role: 'SUPER_ADMIN' }
+        ];
+        localStorage.setItem('user_activity_logs', JSON.stringify(seedLogs));
+        return seedLogs;
+    }
+    return JSON.parse(logs);
+}
+

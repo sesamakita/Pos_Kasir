@@ -5,21 +5,36 @@ import { Camera, CameraResultType } from '@capacitor/camera';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import { Ocr } from '@jcesarmobile/capacitor-ocr';
 import * as db from '../services/db';
-import { Search, SlidersHorizontal, Plus, Trash2, Box, AlertCircle, Camera as CameraIcon, ScanLine, X, ChevronLeft, ChevronDown } from 'lucide-react';
+import { Search, SlidersHorizontal, Plus, Trash2, Box, AlertCircle, Camera as CameraIcon, ScanLine, X, ChevronLeft, ChevronDown, Check } from 'lucide-react';
+
+const SORT_OPTIONS = [
+    { key: 'az', label: 'Nama A-Z' },
+    { key: 'za', label: 'Nama Z-A' },
+    { key: 'price_asc', label: 'Harga Terendah' },
+    { key: 'price_desc', label: 'Harga Tertinggi' },
+    { key: 'stock_asc', label: 'Stok Terendah' }
+];
 
 export default function InventoryScreen() {
     const navigate = useNavigate();
-    const isSuperAdmin = true; // Hardcoded for demo
+    const [currentUser, setCurrentUser] = useState(null);
 
     const [inventory, setInventory] = useState([]);
     const [categories, setCategories] = useState([]);
 
     const [searchQuery, setSearchQuery] = useState('');
     
+    // Sort and Filter States
+    const [sortMode, setSortMode] = useState('az');
+    const [selectedCategoryFilter, setSelectedCategoryFilter] = useState('All');
+    const [isFilterModalVisible, setFilterModalVisible] = useState(false);
+
+    // Restock Modal State
     const [isRestockVisible, setRestockVisible] = useState(false);
     const [selectedProduct, setSelectedProduct] = useState(null);
     const [restockQty, setRestockQty] = useState('');
 
+    // Add Product Modal State
     const [isAddVisible, setAddVisible] = useState(false);
     const [newProduct, setNewProduct] = useState({
         name: '', price: '', stock: '', category_id: 1, image_uri: null, barcode: ''
@@ -37,8 +52,14 @@ export default function InventoryScreen() {
     const [isCategoryPickerVisible, setIsCategoryPickerVisible] = useState(false);
 
     useEffect(() => {
+        const user = db.getCurrentUser();
+        if (!user) {
+            navigate('/login', { replace: true });
+            return;
+        }
+        setCurrentUser(user);
         loadData();
-    }, []);
+    }, [navigate]);
 
     const loadData = async () => {
         const prodData = await db.getProducts();
@@ -46,6 +67,8 @@ export default function InventoryScreen() {
         setInventory(prodData);
         setCategories(catData);
     };
+
+    const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
 
     const handleRestock = async () => {
         const qty = parseInt(restockQty);
@@ -57,7 +80,7 @@ export default function InventoryScreen() {
     };
 
     const handleClearInventory = async () => {
-        if(window.confirm("Hapus semua data produk dan kategori?")) {
+        if(window.confirm("Hapus semua data produk dan kategori? Semua riwayat penjualan juga akan dibersihkan.")) {
             await db.resetDatabase();
             loadData();
         }
@@ -87,24 +110,30 @@ export default function InventoryScreen() {
 
     const handleDeleteProduct = async (product) => {
         if(window.confirm(`Hapus "${product.name}"?`)) {
-            await db.deleteProduct(product.id);
-            loadData();
+            try {
+                await db.deleteProduct(product.id);
+                loadData();
+            } catch (err) {
+                alert("Gagal menghapus produk.");
+            }
         }
     };
 
-    // BARCODE & OCR LOGIC
+    // BARCODE & OCR LOGIC WITH WEB FALLBACKS
     const handleScanBarcode = async () => {
         try {
             await BarcodeScanner.requestPermissions();
             const { barcodes } = await BarcodeScanner.scan();
             if (barcodes.length > 0) {
                 setNewProduct(p => ({ ...p, barcode: barcodes[0].displayValue }));
-                // Trigger OCR automatically
                 handlePhotoOCR();
             }
         } catch (err) {
             console.error(err);
-            alert("Scan Barcode gagal. Jika di web, gunakan perangkat Android.");
+            const manualBarcode = prompt("Masukkan barcode secara manual (Web Fallback):");
+            if (manualBarcode) {
+                setNewProduct(p => ({ ...p, barcode: manualBarcode }));
+            }
         }
     };
 
@@ -122,17 +151,38 @@ export default function InventoryScreen() {
             console.log("OCR raw result:", result);
 
             if (result.results && result.results.length > 0) {
-                // Menggabungkan seluruh teks yang terdeteksi dengan spasi
                 const detectedText = result.results.map(r => r.text.trim()).filter(Boolean).join(' ');
                 const words = detectedText.split(/\s+/).filter(Boolean);
                 setOcrWords(words);
                 setNewProduct(p => ({ ...p, name: words.join(' ') }));
             } else {
-                alert("Tidak ada teks yang terdeteksi pada gambar.");
+                // If OCR fails but photo was taken on web, provide direct typing
+                const inputName = prompt("Foto berhasil diambil. Ketik nama barang:");
+                if (inputName) {
+                    setNewProduct(p => ({ ...p, name: inputName }));
+                }
             }
         } catch (err) {
             console.error("OCR Error detail:", err);
-            alert("Gagal membaca teks dari gambar.");
+            // Web browser file upload input fallback
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'image/*';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onloadend = () => {
+                        setNewProduct(p => ({ ...p, image_uri: reader.result }));
+                        const manualName = prompt("Kemasan terunggah. Masukkan Nama Produk:");
+                        if (manualName) {
+                            setNewProduct(p => ({ ...p, name: manualName }));
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            input.click();
         } finally {
             setIsLoadingOCR(false);
         }
@@ -156,11 +206,9 @@ export default function InventoryScreen() {
         const cleanName = newCategoryName.trim();
         await db.addCategory(cleanName);
         
-        // Reload categories
         const catData = await db.getCategories();
         setCategories(catData);
         
-        // Auto-select kategori baru
         const newCat = catData.find(c => c.name === cleanName);
         if (newCat) {
             setNewProduct(p => ({ ...p, category_id: newCat.id }));
@@ -170,21 +218,60 @@ export default function InventoryScreen() {
         setNewCategoryName('');
     };
 
+    // --- MEMOIZED FILTER AND SORT SYSTEM ---
     const filteredInventory = useMemo(() => {
-        let res = [...inventory];
-        if (searchQuery) {
-            res = res.filter(i => i.name.toLowerCase().includes(searchQuery.toLowerCase()));
+        let result = [...inventory];
+
+        // 1. Filter by category
+        if (selectedCategoryFilter !== 'All') {
+            result = result.filter(item => (item.categoryName || 'Umum') === selectedCategoryFilter);
         }
-        return res;
-    }, [inventory, searchQuery]);
+
+        // 2. Filter by search query
+        if (searchQuery.trim()) {
+            const q = searchQuery.toLowerCase();
+            result = result.filter(item => item.name.toLowerCase().includes(q));
+        }
+
+        // 3. Sort products
+        switch (sortMode) {
+            case 'az':
+                result.sort((a, b) => a.name.localeCompare(b.name));
+                break;
+            case 'za':
+                result.sort((a, b) => b.name.localeCompare(a.name));
+                break;
+            case 'price_asc':
+                result.sort((a, b) => a.price - b.price);
+                break;
+            case 'price_desc':
+                result.sort((a, b) => b.price - a.price);
+                break;
+            case 'stock_asc':
+                result.sort((a, b) => a.stock - b.stock);
+                break;
+            default:
+                break;
+        }
+
+        return result;
+    }, [inventory, searchQuery, sortMode, selectedCategoryFilter]);
+
+    // Unique category names for filtering chips
+    const categoryFilterOptions = useMemo(() => {
+        const uniqueCats = [...new Set(inventory.map(item => item.categoryName || 'Umum'))];
+        return ['All', ...uniqueCats];
+    }, [inventory]);
+
+    const hasActiveFilters = sortMode !== 'az' || selectedCategoryFilter !== 'All';
 
     return (
         <div className="screen-container">
             {/* Header */}
-            <div className="header">
+            <div className="header" style={{ borderBottom: isSuperAdmin ? '1px solid #B8860B30' : '1px solid #3498db30' }}>
                 <div className="header-left">
-                    <button className="icon-btn" onClick={() => navigate('/dashboard')}><ChevronLeft size={24} /></button>
-                    <h1 className="header-title">Inventory</h1>
+                    <button className="icon-btn" onClick={() => navigate('/dashboard')}><ChevronLeft size={24} color={isSuperAdmin ? '#8B6508' : '#2c3e50'} /></button>
+                    <h1 className="header-title" style={{ color: isSuperAdmin ? '#8B6508' : '#2c3e50' }}>Inventory</h1>
                 </div>
                 <div className="header-right">
                     {isSuperAdmin && (
@@ -192,7 +279,11 @@ export default function InventoryScreen() {
                             <Trash2 size={20} color="#e74c3c" />
                         </button>
                     )}
-                    <button className="icon-btn primary-bg" onClick={() => setAddVisible(true)}>
+                    <button 
+                        className="icon-btn primary-bg" 
+                        onClick={() => setAddVisible(true)}
+                        style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                    >
                         <Plus size={24} color="white" />
                     </button>
                 </div>
@@ -210,11 +301,33 @@ export default function InventoryScreen() {
                     />
                     {searchQuery && <button onClick={() => setSearchQuery('')} className="clear-search"><X size={16} /></button>}
                 </div>
-                <button className="filter-btn"><SlidersHorizontal size={22} color="#2c3e50" /></button>
+                <button 
+                    className={`filter-btn ${hasActiveFilters ? 'active-filter-glow' : ''}`} 
+                    onClick={() => setFilterModalVisible(true)}
+                    style={{ border: hasActiveFilters ? '2px solid #27ae60' : '1px solid #bdc3c7' }}
+                >
+                    <SlidersHorizontal size={22} color={hasActiveFilters ? '#27ae60' : '#2c3e50'} />
+                </button>
             </div>
 
+            {/* Compact Filter Status Pill */}
+            {hasActiveFilters && (
+                <div className="active-filters-summary-bar">
+                    <span className="filters-summary-text">
+                        Sort: {SORT_OPTIONS.find(o => o.key === sortMode)?.label}
+                        {selectedCategoryFilter !== 'All' && ` • Kategori: ${selectedCategoryFilter}`}
+                    </span>
+                    <button 
+                        className="reset-filters-btn"
+                        onClick={() => { setSortMode('az'); setSelectedCategoryFilter('All'); }}
+                    >
+                        Reset
+                    </button>
+                </div>
+            )}
+
             {/* Counter */}
-            <p className="result-counter">Menampilkan {filteredInventory.length} produk</p>
+            <p className="result-counter">Menampilkan {filteredInventory.length} dari {inventory.length} produk</p>
 
             {/* List */}
             <div className="list-container">
@@ -240,7 +353,7 @@ export default function InventoryScreen() {
                                         />
                                     ) : null}
                                     <div className="product-icon-placeholder" style={{ display: item.image_uri ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%' }}>
-                                        <Box size={24} color="#3498db" />
+                                        <Box size={24} color={isSuperAdmin ? '#B8860B' : '#3498db'} />
                                     </div>
                                     {item.stock < 10 && <div className="low-stock-badge"><AlertCircle size={12} color="white" /></div>}
                                 </div>
@@ -255,7 +368,7 @@ export default function InventoryScreen() {
                                     <span className={`item-stock ${item.stock < 10 ? 'low-stock-text' : ''}`}>Stock: {item.stock}</span>
                                     <div className="actions-row">
                                         <button className="quick-add-btn" onClick={() => { setSelectedProduct(item); setRestockVisible(true); }}>
-                                            <Plus size={16} color="#3498db" />
+                                            <Plus size={16} color={isSuperAdmin ? '#B8860B' : '#3498db'} />
                                         </button>
                                         {isSuperAdmin && (
                                             <button className="quick-del-btn" onClick={() => handleDeleteProduct(item)}>
@@ -270,6 +383,60 @@ export default function InventoryScreen() {
                 )}
             </div>
 
+            {/* SORT & FILTER BOTTOM MODAL POPUP */}
+            {isFilterModalVisible && (
+                <div className="modal-overlay" onClick={() => setFilterModalVisible(false)}>
+                    <div className="modal-content filter-bottom-modal animate-slide-up" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Filter & Urutkan</h3>
+                            <button onClick={() => setFilterModalVisible(false)} className="close-btn"><X size={24} /></button>
+                        </div>
+                        
+                        <div className="modal-body">
+                            {/* Sort Options */}
+                            <h4 className="filter-modal-title">Urutkan Berdasarkan</h4>
+                            <div className="filter-chips-grid">
+                                {SORT_OPTIONS.map(opt => (
+                                    <button 
+                                        key={opt.key}
+                                        className={`filter-grid-chip ${sortMode === opt.key ? 'active-grid-chip' : ''}`}
+                                        onClick={() => setSortMode(opt.key)}
+                                    >
+                                        {opt.label}
+                                        {sortMode === opt.key && <Check size={12} />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <div className="receipt-divider" style={{ margin: '20px 0' }}></div>
+
+                            {/* Category Filters */}
+                            <h4 className="filter-modal-title">Filter Kategori</h4>
+                            <div className="filter-chips-grid">
+                                {categoryFilterOptions.map(cat => (
+                                    <button 
+                                        key={cat}
+                                        className={`filter-grid-chip ${selectedCategoryFilter === cat ? 'active-grid-chip' : ''}`}
+                                        onClick={() => setSelectedCategoryFilter(cat)}
+                                    >
+                                        {cat === 'All' ? 'Semua Kategori' : cat}
+                                        {selectedCategoryFilter === cat && <Check size={12} />}
+                                    </button>
+                                ))}
+                            </div>
+
+                            <button 
+                                className="primary-button full-width" 
+                                style={{ marginTop: 30, background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                                onClick={() => setFilterModalVisible(false)}
+                            >
+                                Terapkan Filter
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* ADD PRODUCT MODAL */}
             {isAddVisible && (
                 <div className="modal-overlay">
@@ -279,24 +446,26 @@ export default function InventoryScreen() {
                             <button onClick={() => setAddVisible(false)} className="close-btn"><X size={24} /></button>
                         </div>
                         <div className="modal-body">
-                            {/* Barcode Scanner Section */}
                             <div className="input-group">
                                 <label>Barcode (Opsional)</label>
                                 <div className="scan-row">
                                     <input type="text" placeholder="Scan/ketik barcode" value={newProduct.barcode} onChange={e => setNewProduct({...newProduct, barcode: e.target.value})} />
-                                    <button className="btn-scan-camera" onClick={handleScanBarcode}>
+                                    <button 
+                                        className="btn-scan-camera" 
+                                        onClick={handleScanBarcode}
+                                        style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                                    >
                                         <ScanLine size={20} />
                                     </button>
                                 </div>
                             </div>
 
-                            {/* Image & OCR Section */}
                             <div className="image-ocr-box">
                                 {newProduct.image_uri ? (
-                                    <img src={newProduct.image_uri} className="picked-image" />
+                                    <img src={newProduct.image_uri} className="picked-image" alt="" />
                                 ) : (
                                     <button className="img-placeholder" onClick={handlePhotoOCR}>
-                                        <CameraIcon size={32} color="#3498db" />
+                                        <CameraIcon size={32} color={isSuperAdmin ? '#B8860B' : '#3498db'} />
                                         <span>{isLoadingOCR ? "Menganalisa..." : "Foto Kemasan untuk Auto-Nama"}</span>
                                     </button>
                                 )}
@@ -328,7 +497,12 @@ export default function InventoryScreen() {
                                         <span>{categories.find(c => c.id === newProduct.category_id)?.name || 'Pilih Kategori'}</span>
                                         <ChevronDown size={18} color="#7f8c8d" />
                                     </div>
-                                    <button type="button" className="btn-add-category" onClick={handleOpenAddCategory}>
+                                    <button 
+                                        type="button" 
+                                        className="btn-add-category" 
+                                        onClick={handleOpenAddCategory}
+                                        style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                                    >
                                         <Plus size={20} color="white" />
                                     </button>
                                 </div>
@@ -345,7 +519,13 @@ export default function InventoryScreen() {
                                 </div>
                             </div>
                             
-                            <button className="primary-button full-width" onClick={handleAddProduct}>Simpan Produk</button>
+                            <button 
+                                className="primary-button full-width" 
+                                onClick={handleAddProduct}
+                                style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                            >
+                                Simpan Produk
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -363,7 +543,13 @@ export default function InventoryScreen() {
                         </div>
                         <div className="modal-actions">
                             <button className="cancel-button" onClick={() => setRestockVisible(false)}>Batal</button>
-                            <button className="primary-button" onClick={handleRestock}>Update Stok</button>
+                            <button 
+                                className="primary-button" 
+                                onClick={handleRestock}
+                                style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                            >
+                                Update Stok
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -390,7 +576,13 @@ export default function InventoryScreen() {
                             </div>
                             <div className="modal-actions">
                                 <button className="cancel-button" onClick={() => setAddCategoryVisible(false)}>Batal</button>
-                                <button className="primary-button" onClick={handleSaveCategory}>Simpan</button>
+                                <button 
+                                    className="primary-button" 
+                                    onClick={handleSaveCategory}
+                                    style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }}
+                                >
+                                    Simpan
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -418,7 +610,7 @@ export default function InventoryScreen() {
                                         }}
                                     >
                                         <span>{c.name}</span>
-                                        {isSelected && <div className="selected-dot" />}
+                                        {isSelected && <div className="selected-dot" style={{ background: isSuperAdmin ? '#B8860B' : '#3498db' }} />}
                                     </div>
                                 );
                             })}

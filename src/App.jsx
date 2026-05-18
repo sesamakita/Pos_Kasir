@@ -11,6 +11,7 @@ import SettingsScreen from './screens/SettingsScreen';
 import UsersScreen from './screens/UsersScreen';
 import RegisterScreen from './screens/RegisterScreen';
 import EditStoreScreen from './screens/EditStoreScreen';
+import EditProfileScreen from './screens/EditProfileScreen';
 
 export default function App() {
   return (
@@ -28,6 +29,7 @@ export default function App() {
           <Route path="/users" element={<UsersScreen />} />
           <Route path="/register" element={<RegisterScreen />} />
           <Route path="/edit-store" element={<EditStoreScreen />} />
+          <Route path="/edit-profile" element={<EditProfileScreen />} />
         </Routes>
       </BrowserRouter>
     </div>
