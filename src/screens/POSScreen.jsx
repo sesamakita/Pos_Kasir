@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, WifiOff, PenTool, ScanLine } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, Wifi, WifiOff, PenTool, ScanLine } from 'lucide-react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import * as db from '../services/db';
 import { printReceipt } from '../services/PrinterService';
@@ -37,6 +37,7 @@ export default function POSScreen() {
     // Dynamic Store settings & Cashier state
     const [storeSettings, setStoreSettings] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+    const [isOnline, setIsOnline] = useState(navigator.onLine);
 
     useEffect(() => {
         const user = db.getCurrentUser();
@@ -51,6 +52,16 @@ export default function POSScreen() {
 
         loadPOSData();
         loadDrafts();
+
+        const handleOnline = () => setIsOnline(true);
+        const handleOffline = () => setIsOnline(false);
+        window.addEventListener('online', handleOnline);
+        window.addEventListener('offline', handleOffline);
+
+        return () => {
+            window.removeEventListener('online', handleOnline);
+            window.removeEventListener('offline', handleOffline);
+        };
     }, [navigate]);
 
     const loadPOSData = async () => {
@@ -393,10 +404,12 @@ export default function POSScreen() {
                     </button>
                     <h1 style={{ color: isSuper ? '#8B6508' : '#2c3e50' }}>Kasir POS</h1>
                     
-                    {/* Offline Session Mode Badge */}
-                    <div className="offline-mode-badge-pill">
-                        <WifiOff size={11} />
-                        <span>Offline Local</span>
+                    {/* Dynamic Online/Offline Wifi Connection Icon */}
+                    <div 
+                        className={isOnline ? "wifi-status-online" : "wifi-status-offline"}
+                        title={isOnline ? "Koneksi Terhubung (Cloud)" : "Koneksi Terputus (Mode Offline/Lokal)"}
+                    >
+                        {isOnline ? <Wifi size={18} /> : <WifiOff size={18} />}
                     </div>
                 </div>
                 
