@@ -162,32 +162,37 @@ export default function POSScreen() {
         }
     };
 
-    // --- BARCODE / QR SCANNER HANDLER WITH CAMERA ---
+    // --- BARCODE / QR SCANNER HANDLER WITH NATIVE AND WEB FALLBACK ---
     const handleCameraScan = async () => {
-        try {
-            await BarcodeScanner.requestPermissions();
-            const { barcodes } = await BarcodeScanner.scan();
-            if (barcodes.length > 0) {
-                const scannedBarcode = barcodes[0].displayValue;
-                const matched = products.find(p => p.barcode && p.barcode.trim() === scannedBarcode.trim());
-                if (matched) {
-                    addToCart(matched);
-                    alert(`Berhasil memindai: ${matched.name}`);
-                } else {
-                    alert(`Produk dengan barcode "${scannedBarcode}" tidak terdaftar.`);
+        const isNative = window.Capacitor && window.Capacitor.isNativePlatform();
+        if (isNative) {
+            try {
+                await BarcodeScanner.requestPermissions();
+                const { barcodes } = await BarcodeScanner.scan();
+                if (barcodes.length > 0) {
+                    const scannedBarcode = barcodes[0].displayValue;
+                    const matched = products.find(p => p.barcode && p.barcode.trim() === scannedBarcode.trim());
+                    if (matched) {
+                        addToCart(matched);
+                        alert(`Berhasil memindai: ${matched.name}`);
+                    } else {
+                        alert(`Produk dengan barcode "${scannedBarcode}" tidak terdaftar.`);
+                    }
                 }
+                return;
+            } catch (err) {
+                console.warn("Capacitor Barcode Scanner native failure:", err);
             }
-        } catch (err) {
-            console.error(err);
-            // Web Fallback (Vercel web demo)
-            const fallbackCode = prompt("Pindai Barcode / QR Code (Masukkan kode barcode produk):");
-            if (fallbackCode) {
-                const matched = products.find(p => p.barcode && p.barcode.trim() === fallbackCode.trim());
-                if (matched) {
-                    addToCart(matched);
-                } else {
-                    alert(`Produk dengan barcode "${fallbackCode}" tidak ditemukan.`);
-                }
+        }
+
+        // Web Fallback (dev server / Vercel web demo)
+        const fallbackCode = prompt("Pindai Barcode / QR Code (Masukkan kode barcode produk secara manual):");
+        if (fallbackCode) {
+            const matched = products.find(p => p.barcode && p.barcode.trim() === fallbackCode.trim());
+            if (matched) {
+                addToCart(matched);
+            } else {
+                alert(`Produk dengan barcode "${fallbackCode}" tidak ditemukan.`);
             }
         }
     };
@@ -373,6 +378,11 @@ export default function POSScreen() {
 
     const isSuper = currentUser?.role === 'SUPER_ADMIN';
 
+    // Premium styling helpers
+    const brandColor = isSuper ? '#B8860B' : '#3498db';
+    const brandBgLight = isSuper ? 'rgba(184, 134, 11, 0.05)' : 'rgba(52, 152, 219, 0.05)';
+    const brandBorderLight = isSuper ? 'rgba(184, 134, 11, 0.3)' : 'rgba(52, 152, 219, 0.3)';
+
     return (
         <div className="pos-container">
             {/* Header */}
@@ -401,9 +411,10 @@ export default function POSScreen() {
                         {drafts.length > 0 && <span className="cart-badge-count" style={{ background: '#e67e22' }}>{drafts.length}</span>}
                     </button>
 
+                    {/* Shopping Cart Icon (Only Visible on Mobile via CSS Media Query) */}
                     <div className="cart-badge-container">
-                        <ShoppingCart size={20} color={isSuper ? '#B8860B' : '#3498db'} />
-                        {cart.length > 0 && <span className="cart-badge-count" style={{ background: isSuper ? '#B8860B' : '#3498db' }}>{cart.length}</span>}
+                        <ShoppingCart size={20} color={brandColor} />
+                        {cart.length > 0 && <span className="cart-badge-count" style={{ background: brandColor }}>{cart.length}</span>}
                     </div>
                 </div>
             </div>
@@ -414,8 +425,8 @@ export default function POSScreen() {
                 <div className="catalog-pane">
                     {/* Search & Category Pills */}
                     <div className="search-pill-container">
-                        <div style={{ display: 'flex', gap: 12 }}>
-                            <div className="search-box" style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <div className="search-box">
                                 <Search size={18} color="#95a5a6" />
                                 <input 
                                     ref={searchInputRef}
@@ -433,18 +444,19 @@ export default function POSScreen() {
                                 onClick={handleCameraScan}
                                 title="Pindai Barcode / QR Code"
                                 style={{ 
-                                    background: 'rgba(46, 204, 113, 0.1)',
-                                    border: '2px solid #2ecc71',
-                                    borderRadius: 14,
+                                    background: brandBgLight,
+                                    border: `2px solid ${brandBorderLight}`,
+                                    borderRadius: 12,
                                     width: 48,
                                     height: 48,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    boxSizing: 'border-box'
                                 }}
                             >
-                                <ScanLine size={18} color="#2ecc71" />
+                                <ScanLine size={18} color={brandColor} />
                             </button>
 
                             {/* Sort Button */}
@@ -452,30 +464,31 @@ export default function POSScreen() {
                                 className="icon-btn-filter"
                                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                                 style={{ 
-                                    background: isFilterOpen ? 'rgba(52,152,219,0.1)' : '#f8f9fa',
-                                    border: isFilterOpen ? '2px solid #3498db' : '2px solid #eef0f2',
-                                    borderRadius: 14,
+                                    background: isFilterOpen ? brandBgLight : '#f8f9fa',
+                                    border: isFilterOpen ? `2px solid ${brandColor}` : '2px solid #eef0f2',
+                                    borderRadius: 12,
                                     width: 48,
                                     height: 48,
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
-                                    cursor: 'pointer'
+                                    cursor: 'pointer',
+                                    boxSizing: 'border-box'
                                 }}
                             >
-                                <ArrowUpDown size={18} color={isFilterOpen ? '#3498db' : '#7f8c8d'} />
+                                <ArrowUpDown size={18} color={isFilterOpen ? brandColor : '#7f8c8d'} />
                             </button>
                         </div>
 
                         {/* Dropdown Filters & Sorting Mode */}
                         {isFilterOpen && (
-                            <div style={{ background: '#f8f9fa', border: '2px solid #eef0f2', borderRadius: 16, padding: 14, marginTop: 10, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ background: '#f8f9fa', border: '2px solid #eef0f2', borderRadius: 16, padding: 14, marginTop: 4, display: 'flex', flexDirection: 'column', gap: 10 }}>
                                 <span style={{ fontSize: 11, fontWeight: 'bold', color: '#7f8c8d', textTransform: 'uppercase', letterSpacing: 0.5 }}>Urutan Tampilan Barang</span>
                                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                                    <button onClick={() => setSortMode('az')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'az' ? '#3498db' : '#eaeded', color: sortMode === 'az' ? 'white' : '#7f8c8d' }}>A - Z</button>
-                                    <button onClick={() => setSortMode('za')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'za' ? '#3498db' : '#eaeded', color: sortMode === 'za' ? 'white' : '#7f8c8d' }}>Z - A</button>
-                                    <button onClick={() => setSortMode('price_asc')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'price_asc' ? '#3498db' : '#eaeded', color: sortMode === 'price_asc' ? 'white' : '#7f8c8d' }}>Harga Terendah</button>
-                                    <button onClick={() => setSortMode('price_desc')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'price_desc' ? '#3498db' : '#eaeded', color: sortMode === 'price_desc' ? 'white' : '#7f8c8d' }}>Harga Tertinggi</button>
+                                    <button onClick={() => setSortMode('az')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'az' ? brandColor : '#eaeded', color: sortMode === 'az' ? 'white' : '#7f8c8d' }}>A - Z</button>
+                                    <button onClick={() => setSortMode('za')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'za' ? brandColor : '#eaeded', color: sortMode === 'za' ? 'white' : '#7f8c8d' }}>Z - A</button>
+                                    <button onClick={() => setSortMode('price_asc')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'price_asc' ? brandColor : '#eaeded', color: sortMode === 'price_asc' ? 'white' : '#7f8c8d' }}>Harga Terendah</button>
+                                    <button onClick={() => setSortMode('price_desc')} style={{ border: 'none', padding: '6px 12px', borderRadius: 10, fontSize: 12, fontWeight: 'bold', cursor: 'pointer', background: sortMode === 'price_desc' ? brandColor : '#eaeded', color: sortMode === 'price_desc' ? 'white' : '#7f8c8d' }}>Harga Tertinggi</button>
                                 </div>
                             </div>
                         )}
@@ -488,7 +501,7 @@ export default function POSScreen() {
                                     onClick={() => setSelectedCatId(c.id)}
                                     style={{
                                         background: selectedCatId === c.id 
-                                            ? (isSuper ? '#B8860B' : '#3498db') 
+                                            ? brandColor 
                                             : '#f1f2f6',
                                         color: selectedCatId === c.id ? 'white' : '#2c3e50'
                                     }}
@@ -531,7 +544,7 @@ export default function POSScreen() {
                                     <div className="product-info-box">
                                         <h4 className="prod-title">{p.name}</h4>
                                         <div className="prod-footer-row">
-                                            <span className="prod-price" style={{ color: isSuper ? '#B8860B' : '#2980b9' }}>Rp {p.price.toLocaleString('id-ID')}</span>
+                                            <span className="prod-price" style={{ color: brandColor }}>Rp {p.price.toLocaleString('id-ID')}</span>
                                             <span className={`prod-stock ${p.stock < 10 ? 'low-stock-lbl' : ''}`}>
                                                 Stok: {p.stock}
                                             </span>
@@ -608,7 +621,7 @@ export default function POSScreen() {
                             disabled={cart.length === 0}
                             onClick={handleCheckout}
                             style={{ 
-                                background: isSuper ? '#B8860B' : '#3498db',
+                                background: brandColor,
                                 boxShadow: isSuper ? '0 4px 10px rgba(184, 134, 11, 0.2)' : '0 4px 10px rgba(52, 152, 219, 0.2)'
                             }}
                         >
@@ -703,10 +716,10 @@ export default function POSScreen() {
                             />
                         </div>
                         
-                        {/* Quick cash denomination selector */}
+                        {/* Quick cash denomination selector (5-column premium grid) */}
                         <div className="quick-cash-row">
-                            <button className="btn-quick-cash" onClick={() => setCashAmount(totalAmount.toString())}>Uang Pas</button>
-                            <button className="btn-quick-cash" onClick={() => setCashAmount((Math.ceil(totalAmount/10000)*10000).toString())}>Pas Kelipatan</button>
+                            <button className="btn-quick-cash" onClick={() => setCashAmount(totalAmount.toString())}>Pas</button>
+                            <button className="btn-quick-cash" onClick={() => setCashAmount((Math.ceil(totalAmount/10000)*10000).toString())}>Bulat</button>
                             <button className="btn-quick-cash" onClick={() => setCashAmount("20000")}>20k</button>
                             <button className="btn-quick-cash" onClick={() => setCashAmount("50000")}>50k</button>
                             <button className="btn-quick-cash" onClick={() => setCashAmount("100000")}>100k</button>
@@ -728,7 +741,7 @@ export default function POSScreen() {
                         <div className="pos-checkout-signature-section" style={{ marginTop: 20 }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                                 <span style={{ fontSize: 12, fontWeight: 'bold', color: '#7f8c8d', display: 'flex', alignItems: 'center', gap: 6 }}>
-                                    <PenTool size={13} color={isSuper ? '#B8860B' : '#3498db'} />
+                                    <PenTool size={13} color={brandColor} />
                                     Tanda Tangan Kasir
                                 </span>
                                 {(!currentUser?.signature && hasDrawn) && (
@@ -783,7 +796,7 @@ export default function POSScreen() {
                                 style={{
                                     background: (currentChange < 0 || (!currentUser?.signature && !hasDrawn)) 
                                         ? '#bdc3c7' 
-                                        : (isSuper ? '#B8860B' : '#3498db'),
+                                        : brandColor,
                                     cursor: (currentChange < 0 || (!currentUser?.signature && !hasDrawn)) ? 'not-allowed' : 'pointer'
                                 }}
                             >
