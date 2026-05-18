@@ -146,11 +146,15 @@ export default function DashboardScreen() {
                         <p>Data Transaksi</p>
                     </div>
 
-                    <div className="grid-card card-green" onClick={() => navigate('/reports')}>
-                        <div className="grid-icon-box"><BarChart3 size={24} color="#2ecc71" /></div>
-                        <h4>Laporan</h4>
-                        <p>{isSuper ? 'Statistik Keuntungan' : 'Laporan Harian'}</p>
-                    </div>
+                    {isSuper && (
+                        <div className="grid-card card-green" onClick={() => navigate('/reports')} style={{ borderColor: 'rgba(184, 134, 11, 0.15)' }}>
+                            <div className="grid-icon-box" style={{ background: 'rgba(46, 204, 113, 0.1)' }}>
+                                <BarChart3 size={24} color="#2ecc71" />
+                            </div>
+                            <h4 style={{ color: '#8B6508' }}>Laporan</h4>
+                            <p>Statistik Keuntungan</p>
+                        </div>
+                    )}
 
                     {isSuper && (
                         <div className="grid-card card-teal" onClick={() => navigate('/users')} style={{ borderColor: 'rgba(184, 134, 11, 0.15)' }}>

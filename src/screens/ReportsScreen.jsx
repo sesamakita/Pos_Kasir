@@ -17,6 +17,11 @@ export default function ReportsScreen() {
             navigate('/login', { replace: true });
             return;
         }
+        if (user.role !== 'SUPER_ADMIN') {
+            alert("Akses ditolak! Menu laporan hanya dapat diakses oleh Super Admin.");
+            navigate('/dashboard', { replace: true });
+            return;
+        }
         setCurrentUser(user);
         loadReports();
     }, [navigate]);
