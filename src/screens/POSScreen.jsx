@@ -367,6 +367,7 @@ export default function POSScreen() {
 
             // Reset states
             setCart([]);
+            setIsCartOpen(false);
             setPayModalVisible(false);
             loadPOSData(); // Reload stocks
         } catch (err) {
