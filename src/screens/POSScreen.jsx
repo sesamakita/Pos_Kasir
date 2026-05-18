@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, Wifi, WifiOff, PenTool, ScanLine } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, Wifi, WifiOff, PenTool, ScanLine, X, Minimize2 } from 'lucide-react';
 import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import * as db from '../services/db';
 import { printReceipt } from '../services/PrinterService';
@@ -38,6 +38,7 @@ export default function POSScreen() {
     const [storeSettings, setStoreSettings] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
+    const [isCartOpen, setIsCartOpen] = useState(false);
 
     useEffect(() => {
         const user = db.getCurrentUser();
@@ -129,6 +130,7 @@ export default function POSScreen() {
         } else {
             setCart([...cart, { ...product, quantity: 1 }]);
         }
+        setIsCartOpen(true); // Automatically open cart panel when item selected
     };
 
     const updateQty = (productId, change) => {
@@ -149,6 +151,17 @@ export default function POSScreen() {
 
     const removeFromCart = (productId) => {
         setCart(cart.filter(item => item.id !== productId));
+    };
+
+    const handleCloseCart = () => {
+        if (cart.length > 0) {
+            if (window.confirm("Batal belanja? Ini akan mengosongkan keranjang belanja Anda.")) {
+                setCart([]);
+                setIsCartOpen(false);
+            }
+        } else {
+            setIsCartOpen(false);
+        }
     };
 
     const totalAmount = useMemo(() => {
@@ -433,7 +446,7 @@ export default function POSScreen() {
             </div>
 
             {/* Main Area */}
-            <div className="pos-content">
+            <div className={`pos-content ${isCartOpen ? 'cart-active' : ''}`}>
                 {/* Left Pane: Catalog */}
                 <div className="catalog-pane">
                     {/* Search & Category Pills */}
@@ -569,13 +582,41 @@ export default function POSScreen() {
                     </div>
                 </div>
 
-                {/* Right Pane: Cart & Totals */}
-                <div className="cart-pane" style={{ borderLeft: '2px solid #eef0f2' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-                        <h3 className="cart-title" style={{ margin: 0 }}>Keranjang Belanja</h3>
+                {/* Right Pane: Cart & Totals (Sliding Drawer Style like New Product) */}
+                <div className={`cart-pane ${isCartOpen ? 'open' : ''}`}>
+                    <div className="cart-header-drawer">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <ShoppingCart size={20} color={brandColor} />
+                            <h3 className="cart-title" style={{ margin: 0, padding: 0, border: 'none' }}>Keranjang</h3>
+                        </div>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                            {/* Minimize Button (-) */}
+                            <button 
+                                className="cart-action-btn minimize-btn"
+                                onClick={() => setIsCartOpen(false)}
+                                title="Sembunyikan Sementara"
+                            >
+                                <Minimize2 size={16} />
+                            </button>
+
+                            {/* Close / Batal Button (X) */}
+                            <button 
+                                className="cart-action-btn close-btn"
+                                onClick={handleCloseCart}
+                                title="Batal Transaksi"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+                    </div>
+
+                    <div style={{ padding: '12px 20px', background: '#fcfcfc', borderBottom: '1.5px solid #f1f2f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: 11, fontWeight: 'bold', color: '#95a5a6', textTransform: 'uppercase', letterSpacing: 0.5 }}>Detail Belanja</span>
                         {cart.length > 0 && (
                             <button 
                                 onClick={parkOrder}
+                                className="btn-park-draft"
                                 style={{ 
                                     background: 'rgba(230,126,34,0.1)', 
                                     border: 'none', 
@@ -875,6 +916,36 @@ export default function POSScreen() {
                         </div>
                     </div>
                 </div>
+            )}
+
+            {/* FLOATING CART TOGGLE (When Minimized) */}
+            {!isCartOpen && cart.length > 0 && (
+                <button 
+                    className="floating-cart-toggle" 
+                    onClick={() => setIsCartOpen(true)}
+                    title="Tampilkan Keranjang Belanja"
+                    style={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        background: brandColor,
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '50%',
+                        width: 60,
+                        height: 60,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: isSuper ? '0 8px 24px rgba(184, 134, 11, 0.35)' : '0 8px 24px rgba(52, 152, 219, 0.35)',
+                        cursor: 'pointer',
+                        zIndex: 99,
+                        transition: 'transform 0.2s ease'
+                    }}
+                >
+                    <ShoppingCart size={24} color="white" />
+                    <span className="cart-badge-count" style={{ top: -2, right: -2, background: '#e74c3c', width: 20, height: 20, fontSize: 10 }}>{cart.length}</span>
+                </button>
             )}
         </div>
     );

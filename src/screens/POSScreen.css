@@ -67,6 +67,7 @@
 
 /* POS Content Layout */
 .pos-content {
+    position: relative;
     flex: 1;
     display: flex;
     overflow: hidden;
@@ -236,23 +237,99 @@
     cursor: not-allowed;
 }
 
-/* Right Pane: Cart */
+/* Right Pane: Cart (Sliding Side Drawer) */
 .cart-pane {
-    flex: 1;
-    min-width: 400px;
+    position: absolute;
+    top: 0;
+    right: 0;
+    height: 100%;
+    width: 420px;
     background: white;
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.02);
+    box-shadow: -8px 0 30px rgba(0, 0, 0, 0.08);
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 100;
+}
+
+.cart-pane.open {
+    transform: translateX(0);
+}
+
+.catalog-pane {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    border-right: 1.5px solid #eef0f2;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Adjust catalog grid when cart is open on wide screens */
+@media (min-width: 1024px) {
+    .pos-content.cart-active .catalog-pane {
+        margin-right: 420px; /* Squeeze catalog smoothly to leave room for cart drawer */
+    }
+}
+
+.cart-header-drawer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    background: white;
+    border-bottom: 1.5px solid #f1f2f6;
 }
 
 .cart-title {
-    padding: 20px 24px;
     font-size: 16px;
     font-weight: 800;
-    border-bottom: 1.5px solid #f1f2f6;
-    margin: 0;
+    color: #2c3e50;
+}
+
+.cart-action-btn {
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.minimize-btn {
+    background: rgba(149, 165, 166, 0.1);
+    color: #7f8c8d;
+}
+.minimize-btn:hover {
+    background: rgba(149, 165, 166, 0.25);
+    color: #2c3e50;
+    transform: translateY(1px);
+}
+.close-btn {
+    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c;
+}
+.close-btn:hover {
+    background: rgba(231, 76, 60, 0.2);
+    color: #c0392b;
+    transform: rotate(90deg);
+}
+
+.floating-cart-toggle {
+    animation: floatPulse 2.2s infinite ease-in-out;
+}
+.floating-cart-toggle:hover {
+    transform: scale(1.1) rotate(-5deg);
+}
+
+@keyframes floatPulse {
+    0% { transform: translateY(0px) scale(1); }
+    50% { transform: translateY(-5px) scale(1.03); }
+    100% { transform: translateY(0px) scale(1); }
 }
 
 .cart-list {
