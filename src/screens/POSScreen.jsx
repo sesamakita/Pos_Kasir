@@ -39,7 +39,7 @@ export default function POSScreen() {
     const [currentUser, setCurrentUser] = useState(null);
     const [isOnline, setIsOnline] = useState(navigator.onLine);
     const [isCartOpen, setIsCartOpen] = useState(false);
-
+    const [isCancelCartVisible, setIsCancelCartVisible] = useState(false);
     useEffect(() => {
         const user = db.getCurrentUser();
         if (!user) {
@@ -155,13 +155,16 @@ export default function POSScreen() {
 
     const handleCloseCart = () => {
         if (cart.length > 0) {
-            if (window.confirm("Batal belanja? Ini akan mengosongkan keranjang belanja Anda.")) {
-                setCart([]);
-                setIsCartOpen(false);
-            }
+            setIsCancelCartVisible(true);
         } else {
             setIsCartOpen(false);
         }
+    };
+
+    const confirmCloseCart = () => {
+        setCart([]);
+        setIsCancelCartVisible(false);
+        setIsCartOpen(false);
     };
 
     const totalAmount = useMemo(() => {
@@ -693,6 +696,42 @@ export default function POSScreen() {
                             >
                                 Bayar Sekarang (Rp {totalAmount.toLocaleString('id-ID')})
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* CANCEL CART CONFIRMATION SUB-MODAL */}
+            {isCancelCartVisible && (
+                <div className="modal-overlay sub-modal-overlay" style={{ zIndex: 1100 }}>
+                    <div className="modal-content category-modal" style={{ maxWidth: 400 }}>
+                        <div className="modal-header">
+                            <h3 style={{ color: '#e74c3c', display: 'flex', alignItems: 'center', gap: 8, margin: 0, fontSize: 18 }}>
+                                <AlertCircle size={20} />
+                                Batal Belanja?
+                            </h3>
+                            <button onClick={() => setIsCancelCartVisible(false)} className="close-btn" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#7f8c8d' }}><X size={24} /></button>
+                        </div>
+                        <div className="modal-body">
+                            <p style={{ margin: '0 0 24px', color: '#7f8c8d', fontSize: 14, lineHeight: '1.5' }}>
+                                Tindakan ini akan mengosongkan semua barang di keranjang belanja Anda. Apakah Anda yakin ingin melanjutkan?
+                            </p>
+                            <div className="modal-actions" style={{ display: 'flex', gap: 12 }}>
+                                <button 
+                                    className="cancel-button" 
+                                    onClick={() => setIsCancelCartVisible(false)} 
+                                    style={{ flex: 1, padding: '14px', borderRadius: 12, border: 'none', background: '#f1f2f6', color: '#2f3542', fontWeight: 'bold', cursor: 'pointer', fontSize: 15 }}
+                                >
+                                    Kembali
+                                </button>
+                                <button 
+                                    className="primary-button" 
+                                    onClick={confirmCloseCart}
+                                    style={{ flex: 1, padding: '14px', borderRadius: 12, border: 'none', background: '#e74c3c', color: 'white', fontWeight: 'bold', cursor: 'pointer', fontSize: 15 }}
+                                >
+                                    Kosongkan
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
