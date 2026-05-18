@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, WifiOff, PenTool } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, Trash2, Plus, Minus, Search, Check, AlertCircle, Archive, ArrowUpDown, Filter, Printer, RefreshCw, Sparkles, WifiOff, PenTool, ScanLine } from 'lucide-react';
+import { BarcodeScanner } from '@capacitor-mlkit/barcode-scanning';
 import * as db from '../services/db';
 import { printReceipt } from '../services/PrinterService';
 import './POSScreen.css';
@@ -157,6 +158,36 @@ export default function POSScreen() {
                 setSearchQuery(''); // Kosongkan input agar siap scan berikutnya
             } else {
                 alert(`Produk dengan barcode "${query}" tidak ditemukan.`);
+            }
+        }
+    };
+
+    // --- BARCODE / QR SCANNER HANDLER WITH CAMERA ---
+    const handleCameraScan = async () => {
+        try {
+            await BarcodeScanner.requestPermissions();
+            const { barcodes } = await BarcodeScanner.scan();
+            if (barcodes.length > 0) {
+                const scannedBarcode = barcodes[0].displayValue;
+                const matched = products.find(p => p.barcode && p.barcode.trim() === scannedBarcode.trim());
+                if (matched) {
+                    addToCart(matched);
+                    alert(`Berhasil memindai: ${matched.name}`);
+                } else {
+                    alert(`Produk dengan barcode "${scannedBarcode}" tidak terdaftar.`);
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            // Web Fallback (Vercel web demo)
+            const fallbackCode = prompt("Pindai Barcode / QR Code (Masukkan kode barcode produk):");
+            if (fallbackCode) {
+                const matched = products.find(p => p.barcode && p.barcode.trim() === fallbackCode.trim());
+                if (matched) {
+                    addToCart(matched);
+                } else {
+                    alert(`Produk dengan barcode "${fallbackCode}" tidak ditemukan.`);
+                }
             }
         }
     };
@@ -395,6 +426,26 @@ export default function POSScreen() {
                                     onKeyDown={handleSearchKeyDown}
                                 />
                             </div>
+
+                            {/* Barcode Camera Scanner Button */}
+                            <button 
+                                className="icon-btn-filter"
+                                onClick={handleCameraScan}
+                                title="Pindai Barcode / QR Code"
+                                style={{ 
+                                    background: 'rgba(46, 204, 113, 0.1)',
+                                    border: '2px solid #2ecc71',
+                                    borderRadius: 14,
+                                    width: 48,
+                                    height: 48,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <ScanLine size={18} color="#2ecc71" />
+                            </button>
 
                             {/* Sort Button */}
                             <button 
