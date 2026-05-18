@@ -74,7 +74,7 @@
 
 /* Left Pane: Catalog */
 .catalog-pane {
-    flex: 3;
+    flex: 1.8;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -238,26 +238,30 @@
 
 /* Right Pane: Cart */
 .cart-pane {
-    flex: 1.2;
-    min-width: 320px;
+    flex: 1;
+    min-width: 400px;
     background: white;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    box-shadow: -4px 0 20px rgba(0, 0, 0, 0.02);
 }
 
 .cart-title {
-    padding: 16px 20px;
+    padding: 20px 24px;
     font-size: 16px;
-    font-weight: bold;
-    border-bottom: 1px solid #eef0f2;
+    font-weight: 800;
+    border-bottom: 1.5px solid #f1f2f6;
     margin: 0;
 }
 
 .cart-list {
     flex: 1;
     overflow-y: auto;
-    padding: 10px;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
 }
 
 .empty-cart-view {
@@ -265,7 +269,7 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 0;
+    padding: 80px 0;
     color: #bdc3c7;
 }
 
@@ -273,39 +277,54 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 10px;
-    border-bottom: 1px solid #f8f9fa;
+    padding: 14px 16px;
+    background: #f8f9fa;
+    border: 1.5px solid #eef0f2;
+    border-radius: 14px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.cart-item-row:hover {
+    background: white;
+    border-color: rgba(52, 152, 219, 0.25);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+    transform: translateY(-1px);
 }
 
 .cart-item-left {
     display: flex;
     flex-direction: column;
     gap: 4px;
+    max-width: 55%;
 }
 
 .cart-item-name {
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     color: #2c3e50;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .cart-item-price {
     font-size: 11px;
     color: #95a5a6;
+    font-weight: 600;
 }
 
 .cart-item-right {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .qty-control-box {
     display: flex;
     align-items: center;
     background: #f1f2f6;
-    border-radius: 8px;
+    border-radius: 10px;
     padding: 4px;
+    border: 1px solid #eef0f2;
 }
 
 .qty-btn {
@@ -315,60 +334,72 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 24px;
-    height: 24px;
+    width: 26px;
+    height: 26px;
     color: #7f8c8d;
-    border-radius: 4px;
+    border-radius: 6px;
+    transition: all 0.2s ease;
 }
 .qty-btn:hover {
     background: white;
+    color: #2c3e50;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
 }
 
 .qty-val {
-    font-size: 12px;
-    font-weight: bold;
-    width: 24px;
+    font-size: 13px;
+    font-weight: 800;
+    width: 26px;
     text-align: center;
+    color: #2c3e50;
 }
 
 .btn-cart-remove {
     background: none;
     border: none;
     cursor: pointer;
-    padding: 4px;
-    border-radius: 6px;
+    padding: 6px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
 }
 .btn-cart-remove:hover {
     background: #fdf2f2;
 }
 
 .cart-checkout-box {
-    padding: 20px;
-    border-top: 1px solid #eef0f2;
-    background: #f8f9fa;
+    padding: 22px 24px;
+    border-top: 1.5px solid #f1f2f6;
+    background: white;
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.03);
 }
 
 .subtotal-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     font-size: 14px;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
+}
+.subtotal-row span {
+    color: #7f8c8d;
+    font-weight: 600;
 }
 .subtotal-row strong {
-    font-size: 18px;
+    font-size: 20px;
     color: #1a252f;
+    font-weight: 800;
 }
 
 .btn-pay-action {
     width: 100%;
     color: white;
     border: none;
-    border-radius: 12px;
-    padding: 14px;
-    font-weight: bold;
+    border-radius: 14px;
+    padding: 16px;
+    font-weight: 800;
     cursor: pointer;
     font-size: 14px;
-    transition: all 0.2s ease;
+    transition: all 0.25s ease;
 }
 .btn-pay-action:disabled {
     background: #bdc3c7 !important;
