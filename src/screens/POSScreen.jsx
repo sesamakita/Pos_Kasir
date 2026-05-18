@@ -581,109 +581,122 @@ export default function POSScreen() {
                         )}
                     </div>
                 </div>
+            </div>
 
-                {/* Right Pane: Cart & Totals (Sliding Drawer Style like New Product) */}
-                <div className={`cart-pane ${isCartOpen ? 'open' : ''}`}>
-                    <div className="cart-header-drawer">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <ShoppingCart size={20} color={brandColor} />
-                            <h3 className="cart-title" style={{ margin: 0, padding: 0, border: 'none' }}>Keranjang</h3>
+            {/* Centered Shopping Cart Modal Overlay (Styled exactly like New Product in Inventory) */}
+            {isCartOpen && (
+                <div className="modal-overlay" onClick={() => setIsCartOpen(false)}>
+                    <div className="modal-content add-modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 500 }}>
+                        <div className="modal-header">
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                <ShoppingCart size={20} color={brandColor} />
+                                <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>Keranjang Belanja</h3>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                {/* Minimize Button (-) */}
+                                <button 
+                                    className="qty-btn" 
+                                    onClick={() => setIsCartOpen(false)}
+                                    title="Sembunyikan Sementara"
+                                    style={{ width: 32, height: 32, borderRadius: '50%', background: '#f1f2f6', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
+                                >
+                                    <Minimize2 size={16} color="#7f8c8d" />
+                                </button>
+
+                                {/* Close / Cancel Button (X) */}
+                                <button 
+                                    className="qty-btn" 
+                                    onClick={handleCloseCart}
+                                    title="Batal Transaksi"
+                                    style={{ width: 32, height: 32, borderRadius: '50%', background: 'rgba(231,76,60,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', border: 'none', cursor: 'pointer' }}
+                                >
+                                    <X size={16} color="#e74c3c" />
+                                </button>
+                            </div>
                         </div>
-                        
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            {/* Minimize Button (-) */}
-                            <button 
-                                className="cart-action-btn minimize-btn"
-                                onClick={() => setIsCartOpen(false)}
-                                title="Sembunyikan Sementara"
-                            >
-                                <Minimize2 size={16} />
-                            </button>
 
-                            {/* Close / Batal Button (X) */}
-                            <button 
-                                className="cart-action-btn close-btn"
-                                onClick={handleCloseCart}
-                                title="Batal Transaksi"
-                            >
-                                <X size={16} />
-                            </button>
+                        <div className="modal-body" style={{ maxHeight: 380, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                            <div style={{ padding: '0 0 12px', borderBottom: '1.5px solid #f1f2f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <span style={{ fontSize: 11, fontWeight: 'bold', color: '#95a5a6', textTransform: 'uppercase' }}>Detail Belanja</span>
+                                {cart.length > 0 && (
+                                    <button 
+                                        onClick={parkOrder}
+                                        style={{ 
+                                            background: 'rgba(230,126,34,0.1)', 
+                                            border: 'none', 
+                                            padding: '6px 12px', 
+                                            borderRadius: 10, 
+                                            color: '#e67e22', 
+                                            fontSize: 11, 
+                                            fontWeight: 'bold', 
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 6
+                                        }}
+                                    >
+                                        <Archive size={12} />
+                                        Parkir Order
+                                    </button>
+                                )}
+                            </div>
+
+                            <div className="cart-list" style={{ padding: '10px 0', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                                {cart.length === 0 ? (
+                                    <div className="empty-cart-view" style={{ padding: '40px 0', display: 'flex', flexDirection: 'column', alignItems: 'center', color: '#bdc3c7' }}>
+                                        <ShoppingCart size={48} color="#eef0f2" style={{ marginBottom: 8 }} />
+                                        <p style={{ margin: 0 }}>Keranjang kosong</p>
+                                    </div>
+                                ) : (
+                                    cart.map(item => (
+                                        <div key={item.id} className="cart-item-row" style={{ padding: '14px 16px', background: '#f8f9fa', border: '1.5px solid #eef0f2', borderRadius: 14, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div className="cart-item-left" style={{ display: 'flex', flexDirection: 'column', gap: 4, maxWidth: '55%' }}>
+                                                <span className="cart-item-name" style={{ fontSize: 13, fontWeight: 700, color: '#2c3e50', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</span>
+                                                <span className="cart-item-price" style={{ fontSize: 11, color: '#95a5a6', fontWeight: 600 }}>Rp {item.price.toLocaleString('id-ID')}</span>
+                                            </div>
+                                            <div className="cart-item-right" style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                                <div className="qty-control-box" style={{ background: '#f1f2f6', borderRadius: 10, padding: 4, display: 'flex', alignItems: 'center', border: '1px solid #eef0f2' }}>
+                                                    <button className="qty-btn" style={{ border: 'none', background: 'none', cursor: 'pointer', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }} onClick={() => updateQty(item.id, -1)}><Minus size={14} /></button>
+                                                    <span className="qty-val" style={{ fontSize: 13, fontWeight: 800, width: 24, textAlign: 'center', color: '#2c3e50' }}>{item.quantity}</span>
+                                                    <button className="qty-btn" style={{ border: 'none', background: 'none', cursor: 'pointer', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: 6 }} onClick={() => updateQty(item.id, 1)}><Plus size={14} /></button>
+                                                </div>
+                                                <button className="btn-cart-remove" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 6, borderRadius: 8 }} onClick={() => removeFromCart(item.id)}>
+                                                    <Trash2 size={16} color="#e74c3c" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
-                    </div>
 
-                    <div style={{ padding: '12px 20px', background: '#fcfcfc', borderBottom: '1.5px solid #f1f2f6', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 11, fontWeight: 'bold', color: '#95a5a6', textTransform: 'uppercase', letterSpacing: 0.5 }}>Detail Belanja</span>
-                        {cart.length > 0 && (
+                        <div className="cart-checkout-box" style={{ padding: '20px 0 0', borderTop: '1.5px solid #f1f2f6', background: 'white' }}>
+                            <div className="subtotal-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+                                <span style={{ color: '#7f8c8d', fontWeight: 600 }}>Subtotal</span>
+                                <strong style={{ fontSize: 20, color: '#1a252f', fontWeight: 800 }}>Rp {totalAmount.toLocaleString('id-ID')}</strong>
+                            </div>
                             <button 
-                                onClick={parkOrder}
-                                className="btn-park-draft"
+                                className="btn-pay-action" 
+                                disabled={cart.length === 0}
+                                onClick={handleCheckout}
                                 style={{ 
-                                    background: 'rgba(230,126,34,0.1)', 
-                                    border: 'none', 
-                                    padding: '6px 12px', 
-                                    borderRadius: 10, 
-                                    color: '#e67e22', 
-                                    fontSize: 11, 
-                                    fontWeight: 'bold', 
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 6
+                                    width: '100%',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 14,
+                                    padding: 16,
+                                    fontWeight: 800,
+                                    fontSize: 14,
+                                    background: brandColor,
+                                    cursor: 'pointer'
                                 }}
                             >
-                                <Archive size={12} />
-                                Parkir Order
+                                Bayar Sekarang (Rp {totalAmount.toLocaleString('id-ID')})
                             </button>
-                        )}
-                    </div>
-                    
-                    <div className="cart-list">
-                        {cart.length === 0 ? (
-                            <div className="empty-cart-view">
-                                <ShoppingCart size={48} color="#eef0f2" />
-                                <p>Keranjang kosong</p>
-                            </div>
-                        ) : (
-                            cart.map(item => (
-                                <div key={item.id} className="cart-item-row" style={{ borderBottom: '1px solid #f1f2f6' }}>
-                                    <div className="cart-item-left">
-                                        <span className="cart-item-name">{item.name}</span>
-                                        <span className="cart-item-price">Rp {item.price.toLocaleString('id-ID')}</span>
-                                    </div>
-                                    <div className="cart-item-right">
-                                        <div className="qty-control-box" style={{ background: '#f8f9fa' }}>
-                                            <button className="qty-btn" onClick={() => updateQty(item.id, -1)}><Minus size={14} /></button>
-                                            <span className="qty-val">{item.quantity}</span>
-                                            <button className="qty-btn" onClick={() => updateQty(item.id, 1)}><Plus size={14} /></button>
-                                        </div>
-                                        <button className="btn-cart-remove" onClick={() => removeFromCart(item.id)}>
-                                            <Trash2 size={16} color="#e74c3c" />
-                                        </button>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
-
-                    <div className="cart-checkout-box" style={{ borderTop: '2px solid #eef0f2' }}>
-                        <div className="subtotal-row">
-                            <span>Subtotal</span>
-                            <strong style={{ color: '#2c3e50' }}>Rp {totalAmount.toLocaleString('id-ID')}</strong>
                         </div>
-                        <button 
-                            className="btn-pay-action" 
-                            disabled={cart.length === 0}
-                            onClick={handleCheckout}
-                            style={{ 
-                                background: brandColor,
-                                boxShadow: isSuper ? '0 4px 10px rgba(184, 134, 11, 0.2)' : '0 4px 10px rgba(52, 152, 219, 0.2)'
-                            }}
-                        >
-                            Bayar Sekarang (Rp {totalAmount.toLocaleString('id-ID')})
-                        </button>
                     </div>
                 </div>
-            </div>
+            )}
 
             {/* DRAFTS MODAL */}
             {showDraftsModal && (
