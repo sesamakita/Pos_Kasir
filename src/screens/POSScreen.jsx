@@ -403,7 +403,9 @@ export default function POSScreen() {
                         <ChevronLeft size={24} color={isSuper ? '#8B6508' : '#2c3e50'} />
                     </button>
                     <h1 style={{ color: isSuper ? '#8B6508' : '#2c3e50' }}>Kasir POS</h1>
-                    
+                </div>
+                
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
                     {/* Dynamic Online/Offline Wifi Connection Icon */}
                     <div 
                         className={isOnline ? "wifi-status-online" : "wifi-status-offline"}
@@ -411,9 +413,7 @@ export default function POSScreen() {
                     >
                         {isOnline ? <Wifi size={18} /> : <WifiOff size={18} />}
                     </div>
-                </div>
-                
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+
                     {/* Draft Button */}
                     <button 
                         className="icon-btn" 
